@@ -2,6 +2,15 @@ const hero = document.querySelector('.hero-container');
 const background = document.querySelector('.background-wrapper img');
 const siteHeader = document.querySelector('.site-header');
 
+const serviceRoutes = {
+  branding: './branding/index.html'
+};
+
+document.querySelectorAll('.services-page .service-item').forEach((serviceItem) => {
+  const serviceName = serviceItem.querySelector('.service-name')?.textContent.trim().toLowerCase();
+  if (serviceName && serviceRoutes[serviceName]) serviceItem.href = serviceRoutes[serviceName];
+});
+
 if (siteHeader) {
   let previousScroll = window.scrollY;
   let ticking = false;
@@ -90,16 +99,17 @@ document.querySelectorAll('.service-item, .footer-services a').forEach((serviceI
 });
 
 const countElements = document.querySelectorAll('[data-count]');
-const countSection = document.querySelector('.studio-section, .contact-stats-section');
+const countSection = document.querySelector('.studio-section, .contact-stats-section, .about-team-section');
 
 if (countElements.length && countSection) {
   const animateCounts = () => {
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     countElements.forEach((element) => {
       const target = Number(element.dataset.count);
+      const prefix = element.dataset.prefix || '';
       const suffix = element.dataset.suffix || '';
       if (reducedMotion) {
-        element.textContent = `${target}${suffix}`;
+        element.textContent = `${prefix}${target}${suffix}`;
         return;
       }
 
@@ -108,7 +118,7 @@ if (countElements.length && countSection) {
       const tick = (now) => {
         const progress = Math.min((now - start) / duration, 1);
         const eased = 1 - Math.pow(1 - progress, 3);
-        element.textContent = `${Math.floor(target * eased)}${suffix}`;
+        element.textContent = `${prefix}${Math.floor(target * eased)}${suffix}`;
         if (progress < 1) window.requestAnimationFrame(tick);
       };
       window.requestAnimationFrame(tick);
@@ -123,6 +133,20 @@ if (countElements.length && countSection) {
 
   countObserver.observe(countSection);
 }
+
+document.querySelectorAll('.about-studio-play').forEach((button) => {
+  button.addEventListener('click', () => {
+    const video = button.closest('.about-studio-video')?.querySelector('video');
+    if (!video) return;
+    if (video.paused) {
+      video.play();
+      button.textContent = '❚❚';
+    } else {
+      video.pause();
+      button.textContent = '▶';
+    }
+  });
+});
 
 document.querySelectorAll('.service-accordion-header').forEach((header) => {
   header.addEventListener('click', () => {

@@ -4,7 +4,8 @@
     { "source": "/projects", "destination": "/projects/index.html" },
     { "source": "/services", "destination": "/services/index.html" },
     { "source": "/journal", "destination": "/journal/index.html" },
-    { "source": "/contact", "destination": "/contact/index.html" }
+    { "source": "/contact", "destination": "/contact/index.html" },
+    { "source": "/about", "destination": "/about/index.html" }
   ],
   "headers": [
     {
