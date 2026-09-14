@@ -19,6 +19,9 @@ document.querySelectorAll('[data-cms-page]').forEach((link) => {
   const isActive = link.dataset.cmsPage === (cmsPages[selectedPage] ? selectedPage : 'home');
   link.classList.toggle('is-active', isActive);
   if (isActive) link.setAttribute('aria-current', 'page');
+  link.href = window.location.protocol === 'file:'
+    ? `./index.html?page=${link.dataset.cmsPage}`
+    : `/admin/index.html?page=${link.dataset.cmsPage}`;
 });
 
 if (pageTitle) pageTitle.textContent = page.label;
