@@ -12,6 +12,49 @@ document.querySelectorAll('.services-page .service-item').forEach((serviceItem) 
 });
 
 if (siteHeader) {
+  const desktopNav = siteHeader.querySelector('.site-nav');
+  const menuButton = document.createElement('button');
+  menuButton.className = 'mobile-menu-toggle';
+  menuButton.type = 'button';
+  menuButton.setAttribute('aria-label', 'Open navigation menu');
+  menuButton.setAttribute('aria-expanded', 'false');
+  menuButton.innerHTML = '<span></span><span></span><span></span>';
+  siteHeader.appendChild(menuButton);
+
+  const backdrop = document.createElement('button');
+  backdrop.className = 'mobile-sidebar-backdrop';
+  backdrop.type = 'button';
+  backdrop.setAttribute('aria-label', 'Close navigation menu');
+
+  const sidebar = document.createElement('aside');
+  sidebar.className = 'mobile-sidebar';
+  sidebar.id = 'mobile-navigation';
+  sidebar.setAttribute('aria-label', 'Mobile navigation');
+  sidebar.setAttribute('aria-hidden', 'true');
+  sidebar.innerHTML = '<div class="mobile-sidebar-header"><span>MENU</span><button class="mobile-sidebar-close" type="button" aria-label="Close navigation menu">×</button></div>';
+  const mobileNav = desktopNav?.cloneNode(true);
+  if (mobileNav) {
+    mobileNav.className = 'mobile-sidebar-nav';
+    sidebar.appendChild(mobileNav);
+  }
+  document.body.append(backdrop, sidebar);
+
+  const setMenuOpen = (isOpen) => {
+    document.body.classList.toggle('mobile-menu-open', isOpen);
+    sidebar.setAttribute('aria-hidden', String(!isOpen));
+    menuButton.setAttribute('aria-expanded', String(isOpen));
+    menuButton.setAttribute('aria-label', isOpen ? 'Close navigation menu' : 'Open navigation menu');
+    if (isOpen) sidebar.querySelector('.mobile-sidebar-close')?.focus();
+  };
+
+  menuButton.addEventListener('click', () => setMenuOpen(!document.body.classList.contains('mobile-menu-open')));
+  backdrop.addEventListener('click', () => setMenuOpen(false));
+  sidebar.querySelector('.mobile-sidebar-close')?.addEventListener('click', () => setMenuOpen(false));
+  sidebar.querySelectorAll('a').forEach((link) => link.addEventListener('click', () => setMenuOpen(false)));
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && document.body.classList.contains('mobile-menu-open')) setMenuOpen(false);
+  });
+
   let previousScroll = window.scrollY;
   let ticking = false;
 
