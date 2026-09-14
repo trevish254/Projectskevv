@@ -5,7 +5,12 @@
     { "source": "/services", "destination": "/services/index.html" },
     { "source": "/journal", "destination": "/journal/index.html" },
     { "source": "/contact", "destination": "/contact/index.html" },
-    { "source": "/about", "destination": "/about/index.html" }
+    { "source": "/about", "destination": "/about/index.html" },
+    { "source": "/beach-shoot", "destination": "/projects/beach-shoot/index.html" },
+    { "source": "/projects/beach-shoot", "destination": "/projects/beach-shoot/index.html" },
+    { "source": "/branding", "destination": "/services/branding/index.html" },
+    { "source": "/services/branding", "destination": "/services/branding/index.html" },
+    { "source": "/journal/texture-as-a-design-decision", "destination": "/journal/texture-as-a-design-decision/index.html" }
   ],
   "headers": [
     {
