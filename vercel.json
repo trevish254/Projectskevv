@@ -5,6 +5,8 @@
     { "source": "/branding", "destination": "/services/branding", "permanent": false }
   ],
   "rewrites": [
+    { "source": "/admin.css", "destination": "/admin/admin.css" },
+    { "source": "/admin.js", "destination": "/admin/admin.js" },
     { "source": "/admin", "destination": "/admin/index.html" },
     { "source": "/admin/home", "destination": "/admin/index.html?page=home" },
     { "source": "/admin/services", "destination": "/admin/index.html?page=services" },
