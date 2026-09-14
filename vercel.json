@@ -1,0 +1,17 @@
+{
+  "cleanUrls": true,
+  "rewrites": [
+    { "source": "/projects", "destination": "/projects/index.html" },
+    { "source": "/services", "destination": "/services/index.html" },
+    { "source": "/journal", "destination": "/journal/index.html" },
+    { "source": "/contact", "destination": "/contact/index.html" }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)\\.(css|js)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=3600, must-revalidate" }
+      ]
+    }
+  ]
+}
