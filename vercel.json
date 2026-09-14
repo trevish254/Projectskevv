@@ -5,6 +5,12 @@
     { "source": "/branding", "destination": "/services/branding", "permanent": false }
   ],
   "rewrites": [
+    { "source": "/admin", "destination": "/admin/index.html" },
+    { "source": "/admin/home", "destination": "/admin/index.html?page=home" },
+    { "source": "/admin/services", "destination": "/admin/index.html?page=services" },
+    { "source": "/admin/projects", "destination": "/admin/index.html?page=projects" },
+    { "source": "/admin/journal", "destination": "/admin/index.html?page=journal" },
+    { "source": "/admin/legal", "destination": "/admin/index.html?page=legal" },
     { "source": "/projects", "destination": "/projects/index.html" },
     { "source": "/services", "destination": "/services/index.html" },
     { "source": "/journal", "destination": "/journal/index.html" },

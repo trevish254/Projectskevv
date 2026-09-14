@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin · Projectskevv</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./admin.css?v=20260914" />
+  </head>
+  <body>
+    <div class="admin-shell">
+      <aside class="admin-sidebar" aria-label="Admin navigation">
+        <div class="admin-sidebar-top">
+          <a class="admin-wordmark" href="./" aria-label="Projectskevv admin home">PROJECTSKEVV</a>
+          <span class="admin-label">ADMIN</span>
+        </div>
+
+        <div class="admin-tabs" role="tablist" aria-label="Admin sections">
+          <button class="admin-tab is-active" type="button" role="tab" aria-selected="true">Collections</button>
+          <button class="admin-tab" type="button" role="tab" aria-selected="false">Fields</button>
+          <button class="admin-tab" type="button" role="tab" aria-selected="false">Plugins</button>
+        </div>
+
+        <label class="admin-search">
+          <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8"></circle><path d="m16 16 5 5"></path></svg>
+          <span class="sr-only">Search collections</span>
+          <input type="search" placeholder="Search..." />
+        </label>
+
+        <nav class="admin-collections" aria-label="Collections">
+          <a class="admin-nav-item" href="./index.html?page=home" data-cms-page="home">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m4 10 8-6 8 6v9H4z"></path><path d="M9 19v-5h6v5"></path></svg>
+            <span>Home</span>
+          </a>
+          <a class="admin-nav-item" href="./index.html?page=services" data-cms-page="services">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="7" ry="3"></ellipse><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6"></path><path d="M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"></path></svg>
+            <span>Services</span>
+          </a>
+          <a class="admin-nav-item" href="./index.html?page=projects" data-cms-page="projects">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="16" rx="2"></rect><path d="M9 8h6M9 12h6M9 16h4"></path></svg>
+            <span>Projects</span>
+          </a>
+          <a class="admin-nav-item" href="./index.html?page=journal" data-cms-page="journal">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 4h10a2 2 0 0 1 2 2v14H8a2 2 0 0 1-2-2z"></path><path d="M6 18a2 2 0 0 0 2 2h10M10 8h5M10 12h5"></path></svg>
+            <span>Journal</span>
+          </a>
+          <a class="admin-nav-item" href="./index.html?page=legal" data-cms-page="legal">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3 4 6v5c0 5 3.4 8.5 8 10 4.6-1.5 8-5 8-10V6z"></path><path d="M9 12h6M12 9v6"></path></svg>
+            <span>Legal</span>
+          </a>
+        </nav>
+
+        <div class="admin-sidebar-footer">
+          <span class="status-dot" aria-hidden="true"></span>
+          <span>Connected</span>
+        </div>
+      </aside>
+
+      <main class="admin-workspace" aria-label="Admin workspace">
+        <header class="admin-toolbar">
+          <button class="toolbar-button" type="button" aria-label="Open admin navigation">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"></path></svg>
+          </button>
+          <span class="toolbar-spacer"></span>
+          <button class="toolbar-button" type="button" aria-label="More options">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle></svg>
+          </button>
+        </header>
+        <div class="cms-preview-bar">
+          <div><span class="cms-preview-kicker">CMS PREVIEW</span><strong id="cms-page-title">Home</strong><span class="cms-editing-status" id="cms-editing-status"><span class="cms-editing-dot"></span>Editing · <time id="cms-editing-time"></time></span></div>
+          <div class="cms-project-tools" id="cms-project-tools" hidden><select id="cms-project-select" aria-label="Choose project"></select><button id="cms-new-project" type="button">+ New project</button><button class="cms-projects-view-toggle" id="cms-projects-page-link" type="button">View Projects page ↗</button></div>
+          <div class="cms-service-tools" id="cms-service-tools" hidden><select id="cms-service-select" aria-label="Choose service"></select><button id="cms-new-service" type="button">+ New service</button><button class="cms-services-view-toggle" id="cms-services-page-link" type="button">View Services page ↗</button></div>
+          <a id="cms-public-link" href="../index.html" target="_blank" rel="noreferrer">View live page ↗</a>
+        </div>
+        <section class="admin-preview" aria-label="CMS page preview">
+          <div class="cms-editor-frame-overlay" id="cms-editor-frame-overlay">
+            <span class="cms-editor-frame-badge">EDITING HOME</span>
+            <span class="cms-editor-frame-note">Outlined elements are editable</span>
+          </div>
+          <iframe id="cms-page-frame" title="CMS page preview" src="../index.html"></iframe>
+          <section class="cms-project-manager" id="cms-project-manager" hidden aria-label="Project collection editor"></section>
+          <section class="cms-project-manager cms-service-manager" id="cms-service-manager" hidden aria-label="Service collection editor"></section>
+        </section>
+      </main>
+    </div>
+    <script src="./admin.js?v=20260915"></script>
+  </body>
+</html>
