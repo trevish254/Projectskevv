@@ -1,6 +1,9 @@
 const adminSupabaseUrl = 'https://afixydlauedkpgplqzbc.supabase.co';
 const adminSupabasePublishableKey = 'sb_publishable_5uotdJcv0WqSC5YCIiDEdw_kW9jHYOV';
 const adminSupabaseAuthKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFmaXh5ZGxhdWVka3BncGxxemJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkzNDgwMzAsImV4cCI6MjEwNDkyNDAzMH0.AIqe_dJcPnEDKGcH8TdKPApFFk3neyiqT8yuQd5lVBc';
+const adminUsesVercelAuthProxy = window.location.hostname.endsWith('.vercel.app');
+const adminAuthLoginUrl = adminUsesVercelAuthProxy ? '/api/auth/login' : `${adminSupabaseUrl}/auth/v1/token?grant_type=password`;
+const adminAuthUserUrl = adminUsesVercelAuthProxy ? '/api/auth/user' : `${adminSupabaseUrl}/auth/v1/user`;
 const readSupabaseError = async (response) => { const text = await response.text(); try { const body = JSON.parse(text); return body.error_description || body.msg || body.message || text; } catch { return text || `Request failed (${response.status})`; } };
 const adminAuthFetch = (url, options = {}) => {
   const controller = new AbortController();
@@ -22,7 +25,7 @@ if (window.location.protocol === 'file:') {
 const adminAuthReady = new Promise((resolve) => {
   const finish = (token) => { window.projectskevvAdminAccessToken = token; document.body.classList.remove('admin-auth-pending'); adminAuthGate.hidden = true; resolve(token); };
   const validate = async (token) => {
-    const response = await adminAuthFetch(`${adminSupabaseUrl}/auth/v1/user`, { headers: { apikey: adminSupabaseAuthKey, Authorization: `Bearer ${token}` } });
+    const response = await adminAuthFetch(adminAuthUserUrl, { headers: { apikey: adminSupabaseAuthKey, Authorization: `Bearer ${token}` } });
     if (!response.ok) throw new Error(await readSupabaseError(response));
     return response.json();
   };
@@ -43,7 +46,7 @@ const adminAuthReady = new Promise((resolve) => {
     submitButton.disabled = true;
     submitButton.textContent = 'Signing in…';
     try {
-      const response = await adminAuthFetch(`${adminSupabaseUrl}/auth/v1/token?grant_type=password`, { method: 'POST', headers: { apikey: adminSupabaseAuthKey, 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
+      const response = await adminAuthFetch(adminAuthLoginUrl, { method: 'POST', headers: { apikey: adminSupabaseAuthKey, 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
       if (!response.ok) throw new Error(await readSupabaseError(response));
       const session = await response.json();
       try { sessionStorage.setItem('projectskevv.supabase.access_token', session.access_token); } catch { /* storage may be unavailable */ }
@@ -695,7 +698,7 @@ if (page.label === 'Journal') {
       const email = journalManager.querySelector('[data-journal-email]').value.trim();
       const password = journalManager.querySelector('[data-journal-password]').value;
       try {
-        const response = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=password`, { method: 'POST', headers: { apikey: adminSupabaseAuthKey, 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
+        const response = await adminAuthFetch(adminAuthLoginUrl, { method: 'POST', headers: { apikey: adminSupabaseAuthKey, 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
         if (!response.ok) throw new Error(await readSupabaseError(response));
         const session = await response.json(); accessToken = session.access_token;
         try { sessionStorage.setItem('projectskevv.supabase.access_token', accessToken); } catch { /* session storage may be unavailable */ }
