@@ -18,6 +18,18 @@ body {
   font-size: 13px;
 }
 
+body.admin-auth-pending .admin-shell { visibility: hidden; }
+.admin-auth-gate { align-items: center; background: #f7f7f5; display: flex; inset: 0; justify-content: center; padding: 24px; position: fixed; z-index: 1000; }
+.admin-auth-card { background: #fff; border: 1px solid var(--admin-border); border-radius: 10px; box-shadow: 0 18px 50px rgba(0,0,0,.08); max-width: 390px; padding: 30px; width: 100%; }
+.admin-auth-card h1 { font-size: 23px; font-weight: 500; letter-spacing: -.04em; margin: 0 0 8px; }
+.admin-auth-card p { color: var(--admin-muted); line-height: 1.45; margin: 0 0 22px; }
+.admin-auth-form { display: grid; gap: 11px; }
+.admin-auth-form label { color: #555; font-size: 11px; font-weight: 600; }
+.admin-auth-form input { border: 1px solid var(--admin-border); border-radius: 6px; padding: 11px 12px; }
+.admin-auth-form button { background: var(--admin-blue); border: 0; border-radius: 6px; color: #fff; cursor: pointer; margin-top: 5px; padding: 11px 12px; }
+.admin-auth-form button:disabled { cursor: not-allowed; opacity: .5; }
+.admin-auth-message { color: #b42318; font-size: 12px; min-height: 17px; }
+
 button, input { font: inherit; }
 button, a { -webkit-tap-highlight-color: transparent; }
 
@@ -81,12 +93,24 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .cms-service-tools select { background: #fff; border: 1px solid var(--admin-border); border-radius: 5px; color: var(--admin-text); max-width: 190px; padding: 7px 9px; }
 .cms-service-tools button { background: #087ef5; border: 0; border-radius: 5px; color: #fff; cursor: pointer; padding: 8px 10px; }
 .cms-service-tools .cms-services-view-toggle { background: none; color: var(--admin-blue); font-size: 11px; padding: 0; white-space: nowrap; }
+.cms-journal-tools { align-items: center; display: flex; gap: 7px; margin-left: auto; margin-right: 16px; }
+.cms-journal-tools select { background: #fff; border: 1px solid var(--admin-border); border-radius: 5px; color: var(--admin-text); max-width: 190px; padding: 7px 9px; }
+.cms-journal-tools button { background: #087ef5; border: 0; border-radius: 5px; color: #fff; cursor: pointer; padding: 8px 10px; }
+.cms-journal-tools .cms-journals-view-toggle { background: none; color: var(--admin-blue); font-size: 11px; padding: 0; white-space: nowrap; }
 .cms-editing-status { align-items: center; color: #4c4c4c; display: inline-flex; font-size: 11px; gap: 5px; }
 .cms-editing-dot { background: #f59e0b; border-radius: 50%; height: 6px; width: 6px; }
 .admin-preview { background: #f5f5f5; flex: 1; min-height: 0; overflow: hidden; padding: 18px; position: relative; }
 .admin-preview iframe { background: #fff; border: 1px solid var(--admin-border); display: block; height: 100%; min-height: 600px; width: 100%; }
 .cms-project-manager { background: #fff; border: 1px solid var(--admin-border); bottom: 18px; left: 18px; min-height: 0; overflow: auto; position: absolute; right: 18px; top: 18px; z-index: 10; }
-.cms-project-manager[hidden], .cms-project-tools[hidden] { display: none; }
+.cms-project-manager[hidden], .cms-project-tools[hidden], .cms-service-tools[hidden], .cms-journal-tools[hidden] { display: none; }
+.cms-empty-state { align-items: flex-start; display: flex; flex-direction: column; justify-content: center; min-height: 320px; padding: 42px; }
+.cms-empty-state h2 { font-size: 24px; font-weight: 500; margin: 0 0 10px; }
+.cms-empty-state p { color: var(--admin-muted); margin: 0 0 22px; }
+.cms-journal-auth { align-items: center; background: #f7f7f7; border: 1px solid var(--admin-border); border-radius: 6px; display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 16px; padding: 9px 10px; }
+.cms-journal-auth strong { font-size: 11px; margin-right: auto; }
+.cms-journal-auth input { border: 1px solid var(--admin-border); border-radius: 4px; font: inherit; min-width: 145px; padding: 7px 8px; }
+.cms-journal-auth button { background: #087ef5; border: 0; border-radius: 4px; color: #fff; cursor: pointer; padding: 7px 10px; }
+.cms-journal-auth button[data-journal-sign-out] { background: #e9e9e9; color: var(--admin-text); }
 .cms-project-manager-inner { margin: 0 auto; max-width: 920px; padding: 28px 32px 48px; }
 .cms-project-manager-heading { align-items: flex-end; border-bottom: 1px solid var(--admin-border); display: flex; justify-content: space-between; padding-bottom: 18px; }
 .cms-project-manager-heading > div { align-items: flex-end; display: flex; gap: 18px; }
@@ -119,6 +143,13 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .cms-service-section-label { border-bottom: 1px solid var(--admin-border); color: #087ef5; font-size: 10px; letter-spacing: .1em; margin-top: 20px; padding-bottom: 8px; text-transform: uppercase; }
 .cms-service-visual-list { display: grid; gap: 7px; }
 .cms-service-visual-list textarea { min-height: 94px; }
+.cms-journal-editor-toolbar { align-items: center; background: #f5f5f5; border: 1px solid #ddd; border-bottom: 0; border-radius: 7px 7px 0 0; display: flex; flex-wrap: wrap; gap: 4px; padding: 7px; }
+.cms-journal-editor-toolbar button, .cms-journal-editor-toolbar select { background: #fff; border: 1px solid #ddd; border-radius: 4px; color: #444; cursor: pointer; min-height: 29px; padding: 4px 7px; }
+.cms-journal-editor-toolbar button:hover { border-color: #087ef5; color: #087ef5; }
+.cms-journal-rich-text { background: #fff; border: 1px solid #ddd; border-radius: 0 0 7px 7px; min-height: 240px; outline: 0; padding: 14px; }
+.cms-journal-rich-text:focus { border-color: #087ef5; box-shadow: 0 0 0 2px rgba(8,126,245,.12); }
+.cms-journal-rich-text img, .cms-journal-rich-text video { display: block; height: auto; max-width: 100%; }
+.cms-journal-rich-text figure { margin: 16px 0; max-width: 100%; }
 .cms-project-live-preview { display: none; height: calc(100vh - 205px); padding-top: 24px; }
 .cms-project-manager.is-previewing .cms-project-form { display: none; }
 .cms-project-manager.is-previewing .cms-project-live-preview { display: block; }
@@ -154,4 +185,5 @@ button, a { -webkit-tap-highlight-color: transparent; }
   .cms-project-manager-heading > div { align-items: flex-start; flex-direction: column; gap: 10px; }
   .cms-live-project-meta { grid-template-columns: 1fr; }
   .cms-service-tools { margin-left: 0; margin-right: 0; width: 100%; }
+  .cms-journal-tools { margin-left: 0; margin-right: 0; width: 100%; }
 }

@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="./admin.css?v=20260915" />
+    <link rel="stylesheet" href="./admin.css?v=20260916" />
   </head>
   <body>
     <div class="admin-shell">
@@ -72,6 +72,7 @@
           <div><span class="cms-preview-kicker">CMS PREVIEW</span><strong id="cms-page-title">Home</strong><span class="cms-editing-status" id="cms-editing-status"><span class="cms-editing-dot"></span>Editing · <time id="cms-editing-time"></time></span></div>
           <div class="cms-project-tools" id="cms-project-tools" hidden><select id="cms-project-select" aria-label="Choose project"></select><button id="cms-new-project" type="button">+ New project</button><button class="cms-projects-view-toggle" id="cms-projects-page-link" type="button">View Projects page ↗</button></div>
           <div class="cms-service-tools" id="cms-service-tools" hidden><select id="cms-service-select" aria-label="Choose service"></select><button id="cms-new-service" type="button">+ New service</button><button class="cms-services-view-toggle" id="cms-services-page-link" type="button">View Services page ↗</button></div>
+          <div class="cms-journal-tools" id="cms-journal-tools" hidden><select id="cms-journal-select" aria-label="Choose journal"></select><button id="cms-new-journal" type="button">+ New journal</button><button class="cms-journals-view-toggle" id="cms-journals-page-link" type="button">View Journal page ↗</button></div>
           <a id="cms-public-link" href="../index.html" target="_blank" rel="noreferrer">View live page ↗</a>
         </div>
         <section class="admin-preview" aria-label="CMS page preview">
@@ -82,9 +83,10 @@
           <iframe id="cms-page-frame" title="CMS page preview" src="../index.html"></iframe>
           <section class="cms-project-manager" id="cms-project-manager" hidden aria-label="Project collection editor"></section>
           <section class="cms-project-manager cms-service-manager" id="cms-service-manager" hidden aria-label="Service collection editor"></section>
+          <section class="cms-project-manager cms-journal-manager" id="cms-journal-manager" hidden aria-label="Journal collection editor"></section>
         </section>
       </main>
     </div>
-    <script src="./admin.js?v=20260915"></script>
+    <script src="./admin.js?v=20260920"></script>
   </body>
 </html>

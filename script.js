@@ -42,6 +42,74 @@ window.projectskevvDb = createSupabaseRestClient({
   apiKey: SUPABASE_PUBLISHABLE_KEY
 });
 
+const journalListing = document.querySelector('.journal-page #journal-articles');
+if (journalListing) {
+  const journalMedia = (url, title) => {
+    if (!url) return '<div class="article-image article-image-empty" aria-hidden="true"></div>';
+    const cleanUrl = String(url).trim();
+    const isVideo = /\.(mp4|webm|mov|m4v)(\?|#|$)/i.test(cleanUrl);
+    return isVideo
+      ? `<div class="article-image"><video src="${cleanUrl}" autoplay muted loop playsinline aria-label="${title}"></video></div>`
+      : `<div class="article-image"><img src="${cleanUrl}" alt="${title}" /></div>`;
+  };
+  const renderJournalListing = async () => {
+    journalListing.innerHTML = '';
+    try {
+      const posts = await window.projectskevvDb.from('journal_posts').select('id,title,slug,description,cover_image_url,tag,minutes_read,status,published_at,created_at', 'status=eq.published&order=published_at.desc.nullslast,created_at.desc');
+      journalListing.innerHTML = '';
+      if (!posts.length) {
+        journalListing.innerHTML = '<p class="journal-empty-state">No journal articles published yet.</p>';
+        return;
+      }
+      posts.forEach((post) => {
+        const title = post.title || 'Untitled journal';
+        const slug = encodeURIComponent(post.slug || post.id);
+        const card = document.createElement('a');
+        card.className = 'article-card';
+        card.href = `./${slug}/index.html`;
+        card.innerHTML = `${journalMedia(post.cover_image_url, title)}<div class="article-content"><span class="read-time">${post.minutes_read || 1} min read</span><h2>${title}</h2><span class="read-link">READ ARTICLE <span aria-hidden="true">↗</span></span></div>`;
+        journalListing.appendChild(card);
+      });
+    } catch (error) {
+      journalListing.innerHTML = '<p class="journal-empty-state">Journal articles are unavailable right now.</p>';
+      console.error(error);
+    }
+  };
+  renderJournalListing();
+}
+
+const journalArticle = document.querySelector('.journal-article-page');
+const isPublicJournalArticle = journalArticle && !new URLSearchParams(window.location.search).has('cms');
+if (isPublicJournalArticle) {
+  const articlePath = window.location.pathname.split('/').filter(Boolean);
+  const articleSlug = articlePath.at(-1) === 'index.html' ? articlePath.at(-2) : articlePath.at(-1);
+  const renderJournalArticle = async () => {
+    try {
+      const posts = await window.projectskevvDb.from('journal_posts').select('title,slug,description,content_html,cover_image_url,tag,minutes_read,author_name,author_role,author_image_url,published_at', `status=eq.published&slug=eq.${encodeURIComponent(articleSlug)}`);
+      const post = posts[0];
+      if (!post) {
+        document.querySelector('main').innerHTML = '<section class="journal-empty-state"><p>This journal article is not published.</p></section>';
+        return;
+      }
+      const setText = (selector, value) => { const element = document.querySelector(selector); if (element) element.textContent = value || ''; };
+      setText('.journal-article-hero h1', (post.title || 'Untitled journal').toUpperCase());
+      setText('.journal-article-hero p', post.description);
+      setText('.journal-article-read-time', `${post.minutes_read || 1} MIN READ`);
+      setText('.journal-article-meta span:first-child strong', post.tag);
+      setText('.journal-author strong', post.author_name);
+      setText('.journal-author span', post.author_role);
+      const cover = document.querySelector('.journal-article-feature figure');
+      if (cover && post.cover_image_url) cover.innerHTML = /\.(mp4|webm|mov|m4v)(\?|#|$)/i.test(post.cover_image_url) ? `<video src="${post.cover_image_url}" autoplay muted loop playsinline></video>` : `<img src="${post.cover_image_url}" alt="${post.title || ''}" />`;
+      const authorImage = document.querySelector('.journal-author img'); if (authorImage && post.author_image_url) authorImage.src = post.author_image_url;
+      const copy = document.querySelector('.journal-article-copy'); if (copy) copy.innerHTML = post.content_html || '';
+    } catch (error) {
+      document.querySelector('main').innerHTML = '<section class="journal-empty-state"><p>Journal article unavailable right now.</p></section>';
+      console.error(error);
+    }
+  };
+  renderJournalArticle();
+}
+
 const hero = document.querySelector('.hero-container');
 const background = document.querySelector('.background-wrapper img');
 const siteHeader = document.querySelector('.site-header');
@@ -288,6 +356,7 @@ const cmsPreview = new URLSearchParams(window.location.search).get('cms') === '1
 
 if (cmsPreview) {
   const isCmsServiceDetail = document.body.classList.contains('service-detail-page');
+  const isCmsJournalDetail = document.body.classList.contains('journal-article-page');
   const isCmsProjectDetail = document.body.classList.contains('project-detail-page') && !isCmsServiceDetail;
   const postCmsProjectChange = (payload) => {
     if (isCmsProjectDetail && window.parent !== window) window.parent.postMessage({ source: 'projectskevv-cms-project', ...payload }, '*');
@@ -295,6 +364,14 @@ if (cmsPreview) {
   const postCmsServiceChange = (payload) => {
     if (isCmsServiceDetail && window.parent !== window) window.parent.postMessage({ source: 'projectskevv-cms-service', ...payload }, '*');
   };
+  const postCmsJournalChange = (payload) => {
+    if (isCmsJournalDetail && window.parent !== window) window.parent.postMessage({ source: 'projectskevv-cms-journal', ...payload }, '*');
+  };
+  if (isCmsJournalDetail) {
+    const journalEditorMediaStyle = document.createElement('style');
+    journalEditorMediaStyle.textContent = '.journal-article-copy img, .journal-article-copy video { display:block; height:auto; max-width:100%; } .journal-article-copy figure { margin: 18px 0; max-width:100%; }';
+    document.head.appendChild(journalEditorMediaStyle);
+  }
   const applyCmsProjectDraft = (project) => {
     if (!isCmsProjectDetail || !project) return;
     const title = document.querySelector('.project-detail-title-wrap h1');
@@ -352,9 +429,23 @@ if (cmsPreview) {
     const feature = document.querySelector('.service-showcase-feature figure img'); if (feature) feature.src = service.featureImage || '';
     const website = document.querySelector('.service-website-card img'); if (website) website.src = service.websiteImage || '';
   };
+  const applyCmsJournalDraft = (journal) => {
+    if (!isCmsJournalDetail || !journal) return;
+    const setText = (selector, value) => { const element = document.querySelector(selector); if (element) element.textContent = value || ''; };
+    setText('.journal-article-hero h1', (journal.title || 'Untitled journal').toUpperCase());
+    setText('.journal-article-hero p', journal.description);
+    setText('.journal-article-read-time', `${journal.minutesRead || '0'} MIN READ`);
+    setText('.journal-article-meta span:first-child strong', journal.tag);
+    setText('.journal-author strong', journal.authorName);
+    setText('.journal-author span', journal.authorRole);
+    const image = document.querySelector('.journal-article-feature figure img'); if (image) image.src = journal.image || '';
+    const authorImage = document.querySelector('.journal-author img'); if (authorImage) authorImage.src = journal.authorImage || '';
+    const copy = document.querySelector('.journal-article-copy'); if (copy) copy.innerHTML = journal.content || '';
+  };
   window.addEventListener('message', (event) => {
     if (event.data?.source === 'projectskevv-cms-project' && event.data.type === 'draft-sync') applyCmsProjectDraft(event.data.project);
     if (event.data?.source === 'projectskevv-cms-service' && event.data.type === 'draft-sync') applyCmsServiceDraft(event.data.service);
+    if (event.data?.source === 'projectskevv-cms-journal' && event.data.type === 'draft-sync') applyCmsJournalDraft(event.data.journal);
   });
   const cmsEditableSelector = [
     'header', 'main > section', 'main > section > *', 'footer', 'footer > *',
@@ -527,6 +618,7 @@ if (cmsPreview) {
       postCmsProjectChange(galleryIndex >= 0 ? { type: 'media-change', field: 'gallery', index: galleryIndex, value: source } : { type: 'media-change', field: 'image', value: source });
     }
     if (isCmsServiceDetail) postCmsServiceChange({ type: 'media-change', field: 'image', value: source });
+    if (isCmsJournalDetail) postCmsJournalChange({ type: 'media-change', field: cmsActiveMedia?.closest('.journal-author') ? 'authorImage' : 'image', value: source });
     cmsMediaEditor.hidden = true;
     cmsMediaEditorOpen = false;
   };
@@ -976,7 +1068,13 @@ if (cmsPreview) {
       if ((isCmsProjectDetail || isCmsServiceDetail) && !textTarget.dataset.cmsProjectInputBound) {
         textTarget.dataset.cmsProjectInputBound = 'true';
         textTarget.addEventListener('input', () => {
-          const field = textTarget.matches('#service-title, .project-detail-title-wrap h1') ? 'title'
+          const field = textTarget.matches('.journal-article-hero h1') ? 'title'
+            : textTarget.matches('.journal-article-hero p') ? 'description'
+              : textTarget.matches('.journal-article-meta span:first-child strong') ? 'tag'
+                : textTarget.matches('.journal-author strong') ? 'authorName'
+                  : textTarget.matches('.journal-author span') ? 'authorRole'
+                    : textTarget.closest('.journal-article-copy') ? 'content'
+            : textTarget.matches('#service-title, .project-detail-title-wrap h1') ? 'title'
             : textTarget.matches('.project-detail-description') ? 'description'
             : textTarget.matches('.project-summary') ? 'text'
               : textTarget.matches('#service-showcase-title') ? 'applicationTitle'
@@ -986,7 +1084,10 @@ if (cmsPreview) {
               : textTarget.matches('.meta-row .meta-label:nth-child(2)') ? 'tag'
                 : textTarget.matches('.project-detail-meta dd:nth-of-type(1)') ? 'duration'
                     : textTarget.matches('.project-detail-meta dd:nth-of-type(2)') ? 'client' : null;
-          if (field) (isCmsServiceDetail ? postCmsServiceChange : postCmsProjectChange)({ type: 'field-change', field, value: textTarget.textContent.trim() });
+          if (field) {
+            if (isCmsJournalDetail) postCmsJournalChange({ type: 'field-change', field, value: field === 'content' ? document.querySelector('.journal-article-copy')?.innerHTML || '' : textTarget.textContent.trim() });
+            else (isCmsServiceDetail ? postCmsServiceChange : postCmsProjectChange)({ type: 'field-change', field, value: textTarget.textContent.trim() });
+          }
         });
       }
     }

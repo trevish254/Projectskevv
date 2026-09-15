@@ -1,3 +1,58 @@
+const adminSupabaseUrl = 'https://afixydlauedkpgplqzbc.supabase.co';
+const adminSupabasePublishableKey = 'sb_publishable_5uotdJcv0WqSC5YCIiDEdw_kW9jHYOV';
+const adminSupabaseAuthKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFmaXh5ZGxhdWVka3BncGxxemJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkzNDgwMzAsImV4cCI6MjEwNDkyNDAzMH0.AIqe_dJcPnEDKGcH8TdKPApFFk3neyiqT8yuQd5lVBc';
+const readSupabaseError = async (response) => { const text = await response.text(); try { const body = JSON.parse(text); return body.error_description || body.msg || body.message || text; } catch { return text || `Request failed (${response.status})`; } };
+const adminAuthFetch = (url, options = {}) => {
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), 12000);
+  return fetch(url, { ...options, signal: controller.signal }).finally(() => window.clearTimeout(timeout));
+};
+document.body.classList.add('admin-auth-pending');
+const adminAuthGate = document.createElement('div');
+adminAuthGate.className = 'admin-auth-gate';
+adminAuthGate.hidden = true;
+adminAuthGate.innerHTML = `<div class="admin-auth-card"><h1>Admin sign in</h1><p>Authenticate with your Supabase account to access the CMS.</p><form class="admin-auth-form" data-admin-auth-form><label for="admin-auth-email">Email</label><input id="admin-auth-email" type="email" autocomplete="email" required /><label for="admin-auth-password">Password</label><input id="admin-auth-password" type="password" autocomplete="current-password" required /><div class="admin-auth-message" data-admin-auth-message role="alert"></div><button type="submit">Sign in</button></form></div>`;
+document.body.appendChild(adminAuthGate);
+const adminAuthMessage = adminAuthGate.querySelector('[data-admin-auth-message]');
+if (window.location.protocol === 'file:') {
+  adminAuthGate.querySelector('.admin-auth-card p').textContent = 'Open the CMS through a local web server before signing in. Supabase blocks Auth requests from file:// pages.';
+  adminAuthMessage.textContent = 'Redirecting to the local web server…';
+  window.setTimeout(() => { window.location.replace(`http://127.0.0.1:4173/admin/index.html${window.location.search}`); }, 250);
+}
+const adminAuthReady = new Promise((resolve) => {
+  const finish = (token) => { window.projectskevvAdminAccessToken = token; document.body.classList.remove('admin-auth-pending'); adminAuthGate.hidden = true; resolve(token); };
+  const validate = async (token) => {
+    const response = await adminAuthFetch(`${adminSupabaseUrl}/auth/v1/user`, { headers: { apikey: adminSupabaseAuthKey, Authorization: `Bearer ${token}` } });
+    if (!response.ok) throw new Error(await readSupabaseError(response));
+    return response.json();
+  };
+  let storedToken = '';
+  try { storedToken = sessionStorage.getItem('projectskevv.supabase.access_token') || ''; } catch { storedToken = ''; }
+  if (storedToken) {
+    validate(storedToken).then(() => finish(storedToken)).catch((error) => { try { sessionStorage.removeItem('projectskevv.supabase.access_token'); } catch { /* storage may be unavailable */ } adminAuthMessage.textContent = error.message; adminAuthGate.hidden = false; });
+  } else {
+    adminAuthGate.hidden = false;
+  }
+  adminAuthGate.querySelector('[data-admin-auth-form]').addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const submitButton = form.querySelector('button[type="submit"]');
+    const email = form.querySelector('#admin-auth-email').value.trim();
+    const password = form.querySelector('#admin-auth-password').value;
+    adminAuthMessage.textContent = '';
+    submitButton.disabled = true;
+    submitButton.textContent = 'Signing in…';
+    try {
+      const response = await adminAuthFetch(`${adminSupabaseUrl}/auth/v1/token?grant_type=password`, { method: 'POST', headers: { apikey: adminSupabaseAuthKey, 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
+      if (!response.ok) throw new Error(await readSupabaseError(response));
+      const session = await response.json();
+      try { sessionStorage.setItem('projectskevv.supabase.access_token', session.access_token); } catch { /* storage may be unavailable */ }
+      finish(session.access_token);
+    } catch (error) { adminAuthMessage.textContent = error.name === 'AbortError' ? 'Supabase Auth timed out. Check your internet connection, VPN, or firewall.' : `Sign in failed: ${error.message}`; submitButton.disabled = false; submitButton.textContent = 'Sign in'; }
+  });
+});
+window.projectskevvAdminAuthReady = adminAuthReady;
+
 const cmsPages = {
   home: { label: 'Home', source: '../index.html' },
   services: { label: 'Services', source: '../services/index.html' },
@@ -528,4 +583,151 @@ if (page.label === 'Services') {
   window.addEventListener('message', (event) => { if (event.source !== serviceFrame.contentWindow || event.data?.source !== 'projectskevv-cms-service') return; const service = currentService(); if (!service) return; if (event.data.type === 'field-change' && event.data.field) { service[event.data.field] = event.data.value; const input = serviceManager.querySelector(`[data-service-field="${event.data.field}"]`); if (input) input.value = event.data.value; } });
   renderServiceOptions();
   renderServiceForm();
+}
+
+if (page.label === 'Journal') {
+  const journalTools = document.querySelector('#cms-journal-tools');
+  const journalSelect = document.querySelector('#cms-journal-select');
+  const newJournalButton = document.querySelector('#cms-new-journal');
+  const journalsPageLink = document.querySelector('#cms-journals-page-link');
+  const journalManager = document.querySelector('#cms-journal-manager');
+  const journalFrame = document.querySelector('#cms-page-frame');
+  const supabaseUrl = 'https://afixydlauedkpgplqzbc.supabase.co';
+  const supabasePublishableKey = 'sb_publishable_5uotdJcv0WqSC5YCIiDEdw_kW9jHYOV';
+  const journalColumns = 'id,title,slug,status,description,content_html,cover_image_url,tag,minutes_read,author_name,author_role,author_image_url,published_at,created_at,updated_at';
+  const seedJournals = [{
+    id: 'texture-as-a-design-decision', title: 'Texture as a Design Decision Matter', status: 'Live', slug: 'texture-as-a-design-decision',
+    description: 'Texture can make digital work feel tactile, human, and lived-in, but it can also weaken hierarchy fast.',
+    image: 'https://framerusercontent.com/images/q5tU6RCU1nwpJZHJIht3hghY.png', tag: 'CRAFT', minutesRead: '4', authorName: 'JONAS KELLER', authorRole: 'Designer', authorImage: 'https://framerusercontent.com/images/v1GP5HmUip1qJrAvJFmQDDbSFVM.png',
+    content: '<p>Texture works when it carries a purpose. It can reduce the “too perfect” feeling of digital surfaces, soften sharp compositions, and introduce a quiet sense of depth.</p><p>The problem is that texture is persuasive even when it is wrong. Type, spacing, and composition should lead.</p><h2>WHERE TEXTURE ACTUALLY HELPS</h2><p>Texture tends to shine in controlled areas: backgrounds, large image blocks, or sections that exist to set tone.</p>'
+  }];
+  let accessToken = '';
+  try { accessToken = sessionStorage.getItem('projectskevv.supabase.access_token') || ''; } catch { accessToken = ''; }
+  const journals = [];
+  let activeJournalId = journals[0]?.id || null;
+  let draftJournal = null;
+  let journalPreviewMode = false;
+  let journalLoadError = '';
+  const currentJournal = () => draftJournal || journals.find((journal) => journal.id === activeJournalId) || journals[0];
+  const journalRequest = async (path, options = {}) => {
+    const response = await fetch(`${supabaseUrl}/rest/v1/${path}`, {
+      ...options,
+      headers: {
+        apikey: supabasePublishableKey,
+        Authorization: `Bearer ${accessToken || supabasePublishableKey}`,
+        Accept: 'application/json',
+        ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+        ...(options.headers || {})
+      }
+    });
+    if (!response.ok) throw new Error(`Supabase request failed (${response.status}): ${await response.text()}`);
+    return response.status === 204 ? null : response.json();
+  };
+  const fromDbJournal = (row) => ({
+    id: row.id, title: row.title || '', status: row.status === 'published' ? 'Live' : row.status === 'archived' ? 'Archived' : 'Draft', slug: row.slug || '',
+    description: row.description || '', image: row.cover_image_url || '', tag: row.tag || '', minutesRead: String(row.minutes_read || 1), authorName: row.author_name || '', authorRole: row.author_role || '', authorImage: row.author_image_url || '', content: row.content_html || '',
+    publishedAt: row.published_at, createdAt: row.created_at, updatedAt: row.updated_at
+  });
+  const journalStatus = (status) => String(status || '').toLowerCase() === 'live' ? 'published' : String(status || '').toLowerCase() === 'archived' ? 'archived' : 'draft';
+  const toDbJournal = (journal) => ({
+    title: journal.title || 'Untitled journal', slug: journal.slug, status: journalStatus(journal.status), description: journal.description || '', content_html: journal.content || '', cover_image_url: journal.image || null,
+    tag: journal.tag || '', minutes_read: Math.max(1, Number(journal.minutesRead) || 1), author_name: journal.authorName || '', author_role: journal.authorRole || '', author_image_url: journal.authorImage || null,
+    published_at: journalStatus(journal.status) === 'published' ? (journal.publishedAt || new Date().toISOString()) : null
+  });
+  const showJournalNotice = (message) => { const notice = journalManager.querySelector('.cms-project-notice'); if (notice) notice.textContent = message; };
+  const loadJournals = async () => {
+    await window.projectskevvAdminAuthReady;
+    accessToken = window.projectskevvAdminAccessToken || accessToken;
+    const rows = await journalRequest(`journal_posts?select=${encodeURIComponent(journalColumns)}&order=created_at.desc`);
+    journals.splice(0, journals.length, ...rows.map(fromDbJournal));
+    activeJournalId = journals[0]?.id || null;
+  };
+  const journalValue = (journal, field) => journal[field] ?? '';
+  const updateJournalPreview = () => {
+    const journal = currentJournal();
+    const frame = journalManager.querySelector('[data-journal-preview-frame]');
+    if (journal && frame?.contentWindow) frame.contentWindow.postMessage({ source: 'projectskevv-cms-journal', type: 'draft-sync', journal }, '*');
+    let doc = null;
+    try { doc = frame?.contentDocument; } catch { doc = null; }
+    if (!journal || !doc) return;
+    const setText = (selector, value) => { const element = doc.querySelector(selector); if (element) element.textContent = value || ''; };
+    setText('.journal-article-hero h1', (journal.title || 'Untitled journal').toUpperCase());
+    setText('.journal-article-hero p', journal.description);
+    setText('.journal-article-read-time', `${journal.minutesRead || '0'} MIN READ`);
+    setText('.journal-article-meta span:first-child strong', journal.tag);
+    setText('.journal-author strong', journal.authorName);
+    setText('.journal-author span', journal.authorRole);
+    const image = doc.querySelector('.journal-article-feature figure img'); if (image) image.src = journal.image || '';
+    const authorImage = doc.querySelector('.journal-author img'); if (authorImage) authorImage.src = journal.authorImage || '';
+    const copy = doc.querySelector('.journal-article-copy'); if (copy) copy.innerHTML = journal.content || '';
+  };
+  const renderJournalOptions = () => { journalSelect.innerHTML = ''; journals.forEach((journal) => { const option = document.createElement('option'); option.value = journal.id; option.textContent = journal.title || 'Untitled journal'; journalSelect.appendChild(option); }); if (draftJournal) { const option = document.createElement('option'); option.value = '__new__'; option.textContent = 'New journal'; journalSelect.appendChild(option); journalSelect.value = '__new__'; } else journalSelect.value = activeJournalId; };
+  const renderJournalForm = (notice = '') => {
+    const journal = currentJournal();
+    if (!journal) {
+      journalManager.innerHTML = `<div class="cms-project-manager-inner cms-empty-state"><h2>${journalLoadError ? 'Unable to load Journal' : 'Your Journal collection is empty'}</h2><p>${journalLoadError || 'Create your first journal entry to begin adding articles.'}</p><button type="button" class="cms-project-save" data-empty-new-journal>+ New journal</button></div>`;
+      journalManager.querySelector('[data-empty-new-journal]').addEventListener('click', () => newJournalButton.click());
+      return;
+    }
+    journalManager.innerHTML = `
+      <div class="cms-project-manager-inner"><div class="cms-project-manager-heading"><div><h2>${draftJournal ? 'Create journal' : 'Edit journal'}</h2><p>Write and format the article content directly in the CMS.</p><button class="cms-project-preview-toggle" type="button" data-journal-preview-toggle>Preview</button></div><p>${journal.status || 'Draft'}</p></div>
+      <div class="cms-journal-auth"><strong>${accessToken ? 'Supabase connected' : 'Sign in to save changes'}</strong>${accessToken ? '<button type="button" data-journal-sign-out>Sign out</button>' : '<input type="email" data-journal-email placeholder="Supabase email" /><input type="password" data-journal-password placeholder="Password" /><button type="button" data-journal-sign-in>Sign in</button>'}</div>
+      <form class="cms-project-form" data-journal-form>
+        <div class="cms-project-field"><label>Title</label><input data-journal-field="title" required /></div>
+        <div class="cms-project-field"><label>Status</label><input data-journal-field="status" /></div>
+        <div class="cms-project-field"><label>Slug</label><input data-journal-field="slug" required /></div>
+        <div class="cms-project-field"><label>Description</label><textarea data-journal-field="description"></textarea></div>
+        <div class="cms-project-field"><label>Main Image / Thumb</label><input type="url" data-journal-field="image" placeholder="Image, GIF, or video URL" /></div>
+        <div class="cms-project-field"><label>Tag</label><input data-journal-field="tag" /></div>
+        <div class="cms-project-field"><label>Minutes read</label><input type="number" min="1" data-journal-field="minutesRead" /></div>
+        <div class="cms-project-field"><label>Content</label><div><div class="cms-journal-editor-toolbar"><button type="button" data-command="bold"><b>B</b></button><button type="button" data-command="italic"><i>I</i></button><button type="button" data-command="underline"><u>U</u></button><select data-format-block aria-label="Text style"><option value="p">Paragraph</option><option value="h2">Heading 2</option><option value="h3">Heading 3</option><option value="blockquote">Quote</option></select><button type="button" data-command="insertUnorderedList">• List</button><button type="button" data-command="insertOrderedList">1. List</button><button type="button" data-command="createLink">Link</button><button type="button" data-command="undo">Undo</button><button type="button" data-command="redo">Redo</button></div><div class="cms-journal-rich-text" contenteditable="true" data-journal-content aria-label="Journal content"></div><p class="cms-project-hint">Select text, then use the toolbar to format it.</p></div></div>
+        <div class="cms-project-field"><label>Author name</label><input data-journal-field="authorName" /></div><div class="cms-project-field"><label>Author role</label><input data-journal-field="authorRole" /></div><div class="cms-project-field"><label>Author image</label><input type="url" data-journal-field="authorImage" placeholder="Image URL" /></div>
+        <div class="cms-project-form-actions"><span class="cms-project-notice">${notice}</span><button type="button" class="cms-project-cancel" data-journal-cancel>Cancel</button><button class="cms-project-save" type="submit">Save journal</button></div>
+      </form><div class="cms-project-live-preview" data-journal-live-preview><iframe data-journal-preview-frame title="Exact journal page preview" src="../journal/texture-as-a-design-decision/index.html?cms=1&journalEditor=1"></iframe></div></div>`;
+    journalManager.querySelectorAll('[data-journal-field]').forEach((field) => { field.value = journalValue(journal, field.dataset.journalField); field.addEventListener('input', () => { journal[field.dataset.journalField] = field.value; updateJournalPreview(); }); });
+    const content = journalManager.querySelector('[data-journal-content]'); content.innerHTML = journal.content || '';
+    content.addEventListener('input', () => { journal.content = content.innerHTML; updateJournalPreview(); });
+    journalManager.querySelectorAll('[data-command]').forEach((button) => button.addEventListener('click', () => { content.focus(); const command = button.dataset.command; if (command === 'createLink') { const url = window.prompt('Link URL'); if (url) document.execCommand(command, false, url); } else document.execCommand(command, false, null); journal.content = content.innerHTML; updateJournalPreview(); }));
+    journalManager.querySelector('[data-format-block]').addEventListener('change', (event) => { content.focus(); document.execCommand('formatBlock', false, event.target.value); journal.content = content.innerHTML; updateJournalPreview(); });
+    const previewFrame = journalManager.querySelector('[data-journal-preview-frame]'); previewFrame.addEventListener('load', updateJournalPreview);
+    const previewToggle = journalManager.querySelector('[data-journal-preview-toggle]'); previewToggle.addEventListener('click', () => { journalPreviewMode = !journalPreviewMode; journalManager.classList.toggle('is-previewing', journalPreviewMode); previewToggle.textContent = journalPreviewMode ? 'Edit fields' : 'Preview'; updateJournalPreview(); });
+    journalManager.querySelector('[data-journal-sign-in]')?.addEventListener('click', async () => {
+      const email = journalManager.querySelector('[data-journal-email]').value.trim();
+      const password = journalManager.querySelector('[data-journal-password]').value;
+      try {
+        const response = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=password`, { method: 'POST', headers: { apikey: adminSupabaseAuthKey, 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
+        if (!response.ok) throw new Error(await readSupabaseError(response));
+        const session = await response.json(); accessToken = session.access_token;
+        try { sessionStorage.setItem('projectskevv.supabase.access_token', accessToken); } catch { /* session storage may be unavailable */ }
+        loadJournals().then(() => { journalLoadError = ''; renderJournalOptions(); renderJournalForm('Signed in'); }).catch((error) => showJournalNotice(`Unable to load Supabase journals: ${error.message}`));
+      } catch (error) { showJournalNotice(`Sign in failed: ${error.message}`); }
+    });
+    journalManager.querySelector('[data-journal-sign-out]')?.addEventListener('click', () => { accessToken = ''; try { sessionStorage.removeItem('projectskevv.supabase.access_token'); } catch { /* session storage may be unavailable */ } renderJournalForm('Signed out'); });
+    journalManager.classList.toggle('is-previewing', journalPreviewMode);
+    previewToggle.textContent = journalPreviewMode ? 'Edit fields' : 'Preview';
+    journalManager.querySelector('[data-journal-cancel]').addEventListener('click', () => { draftJournal = null; activeJournalId = journals[0]?.id || null; renderJournalOptions(); renderJournalForm(); });
+    journalManager.querySelector('[data-journal-form]').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      journal.slug = String(journal.slug || journal.title || 'new-journal').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || `journal-${Date.now()}`;
+      if (!accessToken) { showJournalNotice('Sign in before saving to Supabase.'); return; }
+      try {
+        if (draftJournal) {
+          const created = await journalRequest('journal_posts', { method: 'POST', headers: { Prefer: 'return=representation' }, body: JSON.stringify(toDbJournal(journal)) });
+          const saved = fromDbJournal(created[0]); journals.unshift(saved); activeJournalId = saved.id; draftJournal = null;
+        } else {
+          const updated = await journalRequest(`journal_posts?id=eq.${encodeURIComponent(journal.id)}`, { method: 'PATCH', headers: { Prefer: 'return=representation' }, body: JSON.stringify(toDbJournal(journal)) });
+          const saved = fromDbJournal(updated[0]); journals.splice(journals.findIndex((item) => item.id === saved.id), 1, saved);
+        }
+        journalPreviewMode = true; renderJournalOptions(); renderJournalForm('Saved to Supabase');
+      } catch (error) { showJournalNotice(`Save failed: ${error.message}`); }
+    });
+    updateJournalPreview();
+  };
+  journalTools.hidden = false; document.querySelector('#cms-project-tools').hidden = true; document.querySelector('#cms-service-tools').hidden = true; journalManager.hidden = false; journalFrame.hidden = true; if (editingStatus) editingStatus.hidden = true; if (publicLink) publicLink.href = '../journal/index.html';
+  journalsPageLink.addEventListener('click', () => { const showing = !journalManager.hidden; journalManager.hidden = showing; journalFrame.hidden = !showing; journalFrame.src = '../journal/index.html?cms=1&lockedMedia=1'; journalsPageLink.textContent = showing ? 'Back to editor' : 'View Journal page ↗'; });
+  journalSelect.addEventListener('change', () => { draftJournal = null; activeJournalId = journalSelect.value; journalPreviewMode = false; renderJournalForm(); });
+  newJournalButton.addEventListener('click', () => { draftJournal = { id: '', title: 'New journal', status: 'Draft', slug: '', description: '', image: '', tag: '', minutesRead: '5', authorName: '', authorRole: '', authorImage: '', content: '<p>Start writing your journal article here.</p>' }; renderJournalOptions(); renderJournalForm(); });
+  window.addEventListener('message', (event) => { if (event.source !== journalFrame.contentWindow || event.data?.source !== 'projectskevv-cms-journal') return; const journal = currentJournal(); if ((event.data.type === 'field-change' || event.data.type === 'media-change') && event.data.field) { journal[event.data.field] = event.data.value; const field = journalManager.querySelector(`[data-journal-field="${event.data.field}"]`); if (field) field.value = event.data.value; const content = journalManager.querySelector('[data-journal-content]'); if (event.data.field === 'content' && content) content.innerHTML = event.data.value; updateJournalPreview(); } });
+  renderJournalOptions(); renderJournalForm();
+  loadJournals().then(() => { journalLoadError = ''; renderJournalOptions(); renderJournalForm(); }).catch((error) => { console.error(error); journalLoadError = error.message; renderJournalOptions(); renderJournalForm(); });
 }
