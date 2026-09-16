@@ -97,6 +97,8 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .cms-journal-tools select { background: #fff; border: 1px solid var(--admin-border); border-radius: 5px; color: var(--admin-text); max-width: 190px; padding: 7px 9px; }
 .cms-journal-tools button { background: #087ef5; border: 0; border-radius: 5px; color: #fff; cursor: pointer; padding: 8px 10px; }
 .cms-journal-tools .cms-journals-view-toggle { background: none; color: var(--admin-blue); font-size: 11px; padding: 0; white-space: nowrap; }
+.cms-home-publish { background: #087ef5; border: 0; border-radius: 5px; color: #fff; cursor: pointer; font-size: 12px; margin-left: auto; padding: 8px 14px; }
+.cms-home-publish:disabled { cursor: wait; opacity: .62; }
 .cms-editing-status { align-items: center; color: #4c4c4c; display: inline-flex; font-size: 11px; gap: 5px; }
 .cms-editing-dot { background: #f59e0b; border-radius: 50%; height: 6px; width: 6px; }
 .admin-preview { background: #f5f5f5; flex: 1; min-height: 0; overflow: hidden; padding: 18px; position: relative; }
@@ -120,13 +122,15 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .cms-project-form { display: grid; gap: 0; }
 .cms-project-field { border-bottom: 1px solid var(--admin-border); display: grid; gap: 18px; grid-template-columns: 150px minmax(0, 1fr); padding: 18px 0; }
 .cms-project-field label { color: #4f4f4f; font-size: 13px; font-weight: 500; padding-top: 9px; }
-.cms-project-field input, .cms-project-field textarea { background: #f5f5f5; border: 1px solid transparent; border-radius: 8px; color: var(--admin-text); font: inherit; outline: 0; padding: 10px 12px; width: 100%; }
+.cms-project-field input, .cms-project-field textarea, .cms-project-field select { background: #f5f5f5; border: 1px solid transparent; border-radius: 8px; color: var(--admin-text); font: inherit; outline: 0; padding: 10px 12px; width: 100%; }
 .cms-project-field textarea { min-height: 86px; resize: vertical; }
-.cms-project-field input:focus, .cms-project-field textarea:focus { background: #fff; border-color: #087ef5; }
+.cms-project-field input:focus, .cms-project-field textarea:focus, .cms-project-field select:focus { background: #fff; border-color: #087ef5; }
 .cms-project-media-control, .cms-project-gallery { display: grid; gap: 9px; }
 .cms-project-image-preview { align-items: center; background: #f1f1f1; border: 1px dashed #cfcfcf; border-radius: 8px; color: #999; display: flex; height: 118px; justify-content: center; overflow: hidden; position: relative; width: 170px; }
 .cms-project-image-preview img, .cms-project-image-preview video { height: 100%; object-fit: cover; width: 100%; }
 .cms-project-image-preview span { font-size: 10px; text-transform: uppercase; }
+.cms-service-media-list-preview { display: grid; gap: 4px; grid-template-columns: repeat(3, minmax(0, 1fr)); width: 100%; }
+.cms-service-media-list-preview img, .cms-service-media-list-preview video { min-width: 0; }
 .cms-project-media-control input { width: 100%; }
 .cms-project-gallery { display: grid; gap: 8px; }
 .cms-project-gallery-list { display: grid; gap: 8px; }

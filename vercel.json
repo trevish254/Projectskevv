@@ -20,9 +20,23 @@
     { "source": "/about", "destination": "/about/index.html" },
     { "source": "/beach-shoot", "destination": "/projects/beach-shoot/index.html" },
     { "source": "/projects/beach-shoot", "destination": "/projects/beach-shoot/index.html" },
+    { "source": "/projects/:slug", "destination": "/projects/beach-shoot/?slug=:slug" },
+    { "source": "/beach-shoot", "destination": "/projects/beach-shoot/" },
+    { "source": "/beach-shoot/", "destination": "/projects/beach-shoot/" },
     { "source": "/branding", "destination": "/services/branding/index.html" },
     { "source": "/services/branding", "destination": "/services/branding/index.html" },
-    { "source": "/journal/texture-as-a-design-decision", "destination": "/journal/texture-as-a-design-decision/index.html" }
+    { "source": "/services/:slug", "destination": "/services/branding/?slug=:slug" },
+    { "source": "/photography-videography", "destination": "/services/branding/" },
+    { "source": "/web-development", "destination": "/services/branding/" },
+    { "source": "/modeling", "destination": "/services/branding/" },
+    { "source": "/branding/", "destination": "/services/branding/" },
+    { "source": "/photography-videography/", "destination": "/services/branding/" },
+    { "source": "/web-development/", "destination": "/services/branding/" },
+    { "source": "/modeling/", "destination": "/services/branding/" },
+    { "source": "/journal/texture-as-a-design-decision", "destination": "/journal/texture-as-a-design-decision/index.html" },
+    { "source": "/texture-as-a-design-decision", "destination": "/journal/texture-as-a-design-decision/" },
+    { "source": "/texture-as-a-design-decision/", "destination": "/journal/texture-as-a-design-decision/" },
+    { "source": "/:slug", "destination": "/journal/texture-as-a-design-decision/?slug=:slug" }
   ],
   "headers": [
     {

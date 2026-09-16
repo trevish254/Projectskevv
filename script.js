@@ -1,3 +1,10 @@
+if (window.location.protocol === 'file:') {
+  const filePath = decodeURIComponent(window.location.pathname).replace(/\\/g, '/');
+  const marker = '/Projectskevv/';
+  const projectPath = filePath.includes(marker) ? filePath.split(marker)[1] : '';
+  if (projectPath) window.location.replace(`http://127.0.0.1:4173/${projectPath}${window.location.search}`);
+}
+
 // Supabase browser client.
 // Only the publishable key belongs in client-side code. Never put the service
 // role key here: it bypasses Row Level Security and must stay server-side.
@@ -42,6 +49,106 @@ window.projectskevvDb = createSupabaseRestClient({
   apiKey: SUPABASE_PUBLISHABLE_KEY
 });
 
+const isHomepage = Boolean(document.querySelector('.hero-container'));
+const isHomepageLockedMedia = (media) => Boolean(media.closest('.footer-services, [class*="projects"], [class*="services"], [class*="journal"], a[href*="projects"], a[href*="services"], a[href*="journal"]'));
+const homepageMediaKey = (media) => {
+  if (!media) return '';
+  if (!media.dataset.homeMediaKey) {
+    const editableMedia = [...document.querySelectorAll('main img, main video')].filter((item) => !isHomepageLockedMedia(item));
+    media.dataset.homeMediaKey = `home-media-${Math.max(0, editableMedia.indexOf(media)) + 1}`;
+  }
+  return media.dataset.homeMediaKey;
+};
+const homepageMediaElements = () => [...document.querySelectorAll('main img, main video')].filter((media) => !isHomepageLockedMedia(media));
+const applyHomepageMedia = (key, source) => {
+  const current = homepageMediaElements().find((media) => homepageMediaKey(media) === key);
+  if (!current || !source) return;
+  const isVideo = /\.(mp4|webm|ogg|mov|m4v)(?:[?#].*)?$/i.test(source);
+  const currentIsVideo = current.tagName.toLowerCase() === 'video';
+  let media = current;
+  if (isVideo !== currentIsVideo) {
+    media = document.createElement(isVideo ? 'video' : 'img');
+    media.className = current.className;
+    media.alt = current.alt || '';
+    media.dataset.homeMediaKey = key;
+    current.replaceWith(media);
+  }
+  media.src = source;
+  if (isVideo) { media.autoplay = true; media.muted = true; media.loop = true; media.playsInline = true; }
+};
+const loadHomepageMedia = async () => {
+  if (!isHomepage) return;
+  try {
+    const rows = await window.projectskevvDb.from('home_media').select('id,media_url', 'status=eq.published');
+    rows.forEach((row) => applyHomepageMedia(row.id, row.media_url));
+  } catch (error) { console.error(error); }
+};
+loadHomepageMedia();
+
+const renderHomepagePricing = (plans) => {
+  const container = document.querySelector('#pricing .pricing-cards');
+  if (!container || !Array.isArray(plans)) return;
+  container.innerHTML = '';
+  plans.forEach((plan, index) => {
+    const card = document.createElement('article');
+    card.className = `pricing-card${plan.is_popular ? ' popular' : ''}`;
+    card.dataset.pricingId = plan.id || `pricing-plan-${index + 1}`;
+    if (plan.is_popular) { const popular = document.createElement('div'); popular.className = 'popular-tag'; popular.textContent = 'POPULAR'; card.appendChild(popular); }
+    const header = document.createElement('div');
+    header.className = 'pricing-card-header';
+    const titleRow = document.createElement('div');
+    titleRow.className = 'plan-title-row';
+    const title = document.createElement('h3'); title.textContent = plan.title || 'Untitled plan'; titleRow.appendChild(title);
+    if (plan.eyebrow) { const eyebrow = document.createElement('span'); eyebrow.className = 'availability-label'; eyebrow.textContent = plan.eyebrow; titleRow.appendChild(eyebrow); }
+    header.appendChild(titleRow);
+    const description = document.createElement('p'); description.textContent = plan.description || ''; header.appendChild(description); card.appendChild(header);
+    const price = document.createElement('div'); price.className = 'card-price';
+    const amount = document.createElement('strong'); amount.textContent = plan.price || '$0';
+    const unit = document.createElement('span'); unit.textContent = plan.price_unit || '/project';
+    price.append(amount, unit); card.appendChild(price);
+    const features = document.createElement('ul'); features.className = 'features';
+    (Array.isArray(plan.features) ? plan.features : []).forEach((feature) => { const item = document.createElement('li'); item.textContent = feature; features.appendChild(item); });
+    card.appendChild(features);
+    const cta = document.createElement('a'); cta.className = 'pricing-cta'; cta.href = '#contact'; cta.textContent = plan.cta_label || 'START PROJECT';
+    const arrow = document.createElement('span'); arrow.textContent = '↗'; cta.appendChild(arrow); card.appendChild(cta);
+    container.appendChild(card);
+  });
+  const count = document.querySelector('#pricing .pricing-title-row span');
+  if (count) count.textContent = `(${plans.length})`;
+  document.dispatchEvent(new CustomEvent('projectskevv:pricing-updated'));
+};
+const loadHomepagePricing = async () => {
+  if (!isHomepage) return;
+  try {
+    const plans = await window.projectskevvDb.from('home_pricing').select('id,title,eyebrow,description,price,price_unit,features,cta_label,is_popular,sort_order,status', 'status=eq.published&order=sort_order.asc,created_at.asc');
+    if (plans.length) renderHomepagePricing(plans);
+  } catch (error) { console.error(error); }
+};
+loadHomepagePricing();
+
+const applyHomepageSettings = (settings) => {
+  const logoText = String(settings?.logo_text || '').trim();
+  if (logoText) document.querySelectorAll('.brand-mark').forEach((logo) => { logo.textContent = logoText; });
+  const socialLinks = Array.isArray(settings?.social_links) ? settings.social_links : [];
+  document.querySelectorAll('.footer-socials').forEach((list) => {
+    list.innerHTML = '';
+    socialLinks.forEach((item) => {
+      const link = document.createElement('a');
+      link.href = item?.url || '#contact';
+      link.textContent = item?.label || '';
+      list.appendChild(link);
+    });
+  });
+};
+const loadHomepageSettings = async () => {
+  if (!document.querySelector('.brand-mark, .footer-socials')) return;
+  try {
+    const rows = await window.projectskevvDb.from('home_settings').select('logo_text,social_links,status', 'id=eq.global&status=eq.published');
+    if (rows[0]) applyHomepageSettings(rows[0]);
+  } catch (error) { console.error(error); }
+};
+loadHomepageSettings();
+
 const journalListing = document.querySelector('.journal-page #journal-articles');
 if (journalListing) {
   const journalMedia = (url, title) => {
@@ -66,7 +173,9 @@ if (journalListing) {
         const slug = encodeURIComponent(post.slug || post.id);
         const card = document.createElement('a');
         card.className = 'article-card';
-        card.href = `./${slug}/index.html`;
+        // Journal rows are database records, not folders on disk. Reuse the
+        // stable article template and pass the row slug to it.
+        card.href = `./texture-as-a-design-decision/?slug=${slug}`;
         card.innerHTML = `${journalMedia(post.cover_image_url, title)}<div class="article-content"><span class="read-time">${post.minutes_read || 1} min read</span><h2>${title}</h2><span class="read-link">READ ARTICLE <span aria-hidden="true">↗</span></span></div>`;
         journalListing.appendChild(card);
       });
@@ -78,11 +187,308 @@ if (journalListing) {
   renderJournalListing();
 }
 
+const projectListing = document.querySelector('.projects-page .project-page-grid');
+if (projectListing) {
+  const projectCount = document.querySelector('.projects-page .project-page-count strong');
+  const projectMedia = (url, title) => {
+    if (!url) return '<div class="project-card-media project-card-media-empty"></div>';
+    const cleanUrl = String(url).trim();
+    return /\.(mp4|webm|mov|m4v)(\?|#|$)/i.test(cleanUrl)
+      ? `<div class="project-card-media"><video src="${cleanUrl}" autoplay muted loop playsinline aria-label="${title}"></video><span></span></div>`
+      : `<div class="project-card-media"><img src="${cleanUrl}" alt="${title}" /><span></span></div>`;
+  };
+  const renderProjectListing = async () => {
+    try {
+      const projects = await window.projectskevvDb.from('project_posts').select('id,title,slug,description,cover_image_url,tag,duration,status,published_at,created_at', 'status=eq.published&order=published_at.desc.nullslast,created_at.desc');
+      projectListing.innerHTML = '';
+      if (projectCount) projectCount.textContent = String(projects.length);
+      if (!projects.length) {
+        projectListing.innerHTML = '<p class="project-empty-state">No projects published yet.</p>';
+        return;
+      }
+      projects.forEach((project) => {
+        const title = project.title || 'Untitled project';
+        const card = document.createElement('a');
+        card.className = 'framer-1xqid2a project-card';
+        card.href = `./beach-shoot/?slug=${encodeURIComponent(project.slug || project.id)}`;
+        card.innerHTML = `${projectMedia(project.cover_image_url, title)}<div class="project-card-meta"><div><p>${project.duration || ''}</p><h3>${title}</h3></div><span>↗</span></div>`;
+        const label = card.querySelector('.project-card-media span');
+        if (label) label.textContent = project.tag || '';
+        projectListing.appendChild(card);
+      });
+    } catch (error) {
+      console.error(error);
+      projectListing.innerHTML = '<p class="project-empty-state">Projects are unavailable right now.</p>';
+    }
+  };
+  renderProjectListing();
+}
+
+const homeProjectGrid = document.querySelector('#projects .framer-1oykw2t');
+if (homeProjectGrid) {
+  const renderHomeProjectMedia = (url, title) => {
+    const media = document.createElement(url && /\.(mp4|webm|ogg|mov|m4v)(?:[?#].*)?$/i.test(url) ? 'video' : 'img');
+    if (!url) return media;
+    media.src = url;
+    media.alt = title;
+    if (media.tagName === 'VIDEO') { media.autoplay = true; media.muted = true; media.loop = true; media.playsInline = true; }
+    return media;
+  };
+  const renderHomeProjects = async () => {
+    homeProjectGrid.innerHTML = '';
+    try {
+      const projects = await window.projectskevvDb.from('project_posts').select('id,title,slug,description,cover_image_url,tag,status,published_at,created_at', 'status=eq.published&order=published_at.desc.nullslast,created_at.desc');
+      const count = document.querySelector('#projects .projects-title p');
+      if (count) count.textContent = `(${projects.length})`;
+      if (!projects.length) { homeProjectGrid.innerHTML = '<p class="project-empty-state">No projects published yet.</p>'; return; }
+      projects.forEach((project, index) => {
+        const title = project.title || 'Untitled project';
+        const card = document.createElement('a');
+        card.className = 'framer-1xqid2a project-card';
+        card.href = `./projects/beach-shoot/?slug=${encodeURIComponent(project.slug || project.id)}`;
+        const media = document.createElement('div');
+        media.className = 'project-card-media';
+        media.append(renderHomeProjectMedia(project.cover_image_url, title));
+        const label = document.createElement('span');
+        label.textContent = String(index + 1).padStart(2, '0');
+        media.appendChild(label);
+        const meta = document.createElement('div');
+        meta.className = 'project-card-meta';
+        meta.innerHTML = `<div><h3></h3><p></p></div><span aria-hidden="true">↗</span>`;
+        meta.querySelector('h3').textContent = title;
+        meta.querySelector('p').textContent = project.tag || project.description || '';
+        card.append(media, meta);
+        homeProjectGrid.appendChild(card);
+      });
+    } catch (error) {
+      homeProjectGrid.innerHTML = '<p class="project-empty-state">Projects are unavailable right now.</p>';
+      console.error(error);
+    }
+  };
+  renderHomeProjects();
+}
+
+const journalGrids = [
+  { element: document.querySelector('.journal-grid'), prefix: './journal/' },
+  { element: document.querySelector('.journal-related-grid'), prefix: '../' }
+].filter((entry) => entry.element);
+if (journalGrids.length) {
+  const journalGridMedia = (url, title) => {
+    if (!url) return '<div class="article-image article-image-empty" aria-hidden="true"></div>';
+    const cleanUrl = String(url).trim();
+    return /\.(mp4|webm|mov|m4v|ogg)(\?|#|$)/i.test(cleanUrl)
+      ? `<div class="article-image"><video src="${cleanUrl}" autoplay muted loop playsinline aria-label="${title}"></video></div>`
+      : `<div class="article-image"><img src="${cleanUrl}" alt="${title}" /></div>`;
+  };
+  const renderDatabaseJournalCards = async (entry) => {
+    try {
+      const posts = await window.projectskevvDb.from('journal_posts').select('id,title,slug,cover_image_url,minutes_read,status,published_at,created_at', 'status=eq.published&order=published_at.desc.nullslast,created_at.desc');
+      entry.element.innerHTML = '';
+      if (!posts.length) {
+        entry.element.innerHTML = '<p class="journal-empty-state">No journal articles published yet.</p>';
+        return;
+      }
+      const visiblePosts = posts.slice(0, 2);
+      visiblePosts.forEach((post) => {
+        const title = post.title || 'Untitled journal';
+        const card = document.createElement('a');
+        card.className = 'article-card';
+        card.href = `${entry.prefix}texture-as-a-design-decision/?slug=${encodeURIComponent(post.slug || post.id)}`;
+        card.innerHTML = `${journalGridMedia(post.cover_image_url, title)}<div class="article-content"><span class="read-time">${post.minutes_read || 1} min read</span><h3>${title}</h3><span class="read-link">READ ARTICLE <span aria-hidden="true">↗</span></span></div>`;
+        entry.element.appendChild(card);
+      });
+    } catch (error) {
+      console.error(error);
+    }
+  };
+  journalGrids.forEach(renderDatabaseJournalCards);
+}
+
+const projectDetail = document.querySelector('.project-detail-page');
+const isPublicProjectDetail = projectDetail && !document.body.classList.contains('service-detail-page') && !new URLSearchParams(window.location.search).has('cms');
+if (isPublicProjectDetail) {
+  const projectPath = window.location.pathname.split('/').filter(Boolean);
+  const projectSlug = new URLSearchParams(window.location.search).get('slug') || (projectPath.at(-1) === 'index.html' ? projectPath.at(-2) : projectPath.at(-1));
+  const renderProjectDetail = async () => {
+    try {
+      const rows = await window.projectskevvDb.from('project_posts').select('title,slug,description,body_text,cover_image_url,tag,duration,client,website_url,gallery_urls,published_at', `status=eq.published&slug=eq.${encodeURIComponent(projectSlug)}`);
+      const project = rows[0];
+      if (!project) { document.querySelector('main').innerHTML = '<section class="project-empty-state"><p>This project is not published.</p></section>'; return; }
+      const setText = (selector, value) => { const element = document.querySelector(selector); if (element) element.textContent = value || ''; };
+      setText('.project-detail-title-wrap h1', (project.title || 'Untitled project').toUpperCase());
+      setText('.project-detail-description', project.description);
+      setText('.project-summary', project.body_text);
+      setText('.project-detail-meta dd:nth-of-type(1)', project.duration);
+      setText('.project-detail-meta dd:nth-of-type(2)', project.client);
+      setText('.meta-row .meta-label:nth-child(2)', project.tag);
+      const website = document.querySelector('.project-detail-button-primary');
+      if (website) { website.href = project.website_url || '#'; website.hidden = !project.website_url; }
+      const setMedia = (container, source, alt) => {
+        if (!container) return;
+        const cleanSource = String(source || '').trim();
+        const isVideo = /\.(mp4|webm|ogg|mov|m4v)(?:[?#].*)?$/i.test(cleanSource);
+        let media = container.querySelector('img, video');
+        if (media && ((isVideo && media.tagName.toLowerCase() !== 'video') || (!isVideo && media.tagName.toLowerCase() !== 'img'))) { media.remove(); media = null; }
+        if (!media) { media = document.createElement(isVideo ? 'video' : 'img'); container.innerHTML = ''; container.appendChild(media); }
+        media.src = cleanSource; media.alt = alt || '';
+        if (isVideo) { media.autoplay = true; media.muted = true; media.loop = true; media.playsInline = true; media.controls = true; media.load(); }
+      };
+      setMedia(document.querySelector('.project-detail-lead-image'), project.cover_image_url, project.title);
+      const gallery = document.querySelector('.image-gallery');
+      if (gallery) {
+        gallery.innerHTML = '';
+        const columns = [document.createElement('div'), document.createElement('div')];
+        columns.forEach((column) => { column.className = 'gallery-column'; gallery.appendChild(column); });
+        (Array.isArray(project.gallery_urls) ? project.gallery_urls : []).forEach((source, index) => {
+          const figure = document.createElement('figure');
+          figure.className = `gallery-item ${index === 0 ? 'gallery-item-large' : 'gallery-item-medium'}`;
+          setMedia(figure, source, `${project.title || 'Project'} gallery media ${index + 1}`);
+          columns[index % 2].appendChild(figure);
+        });
+      }
+      const relatedGrid = document.querySelector('.project-related-grid');
+      if (relatedGrid) {
+        const relatedRows = await window.projectskevvDb.from('project_posts').select('id,title,slug,cover_image_url,tag,duration,status,published_at,created_at', 'status=eq.published&order=published_at.desc.nullslast,created_at.desc');
+        const related = relatedRows.filter((item) => item.slug !== project.slug).slice(0, 2);
+        relatedGrid.innerHTML = '';
+        if (!related.length) relatedGrid.innerHTML = '<p class="project-empty-state">More projects coming soon.</p>';
+        related.forEach((item) => {
+          const card = document.createElement('a');
+          card.className = 'article-card';
+          card.href = `../beach-shoot/?slug=${encodeURIComponent(item.slug || item.id)}`;
+          const media = /\.(mp4|webm|ogg|mov|m4v)(?:[?#].*)?$/i.test(String(item.cover_image_url || '').trim())
+            ? `<div class="article-image"><video src="${item.cover_image_url}" autoplay muted loop playsinline aria-label="${item.title || ''}"></video></div>`
+            : `<div class="article-image"><img src="${item.cover_image_url || ''}" alt="${item.title || ''}" /></div>`;
+          card.innerHTML = `${media}<div class="article-content"><span class="read-time">${item.duration || ''}</span><h3>${item.title || 'Untitled project'}</h3><span class="read-link">VIEW PROJECT <span aria-hidden="true">↗</span></span></div>`;
+          relatedGrid.appendChild(card);
+        });
+      }
+    } catch (error) { document.querySelector('main').innerHTML = '<section class="project-empty-state"><p>Project unavailable right now.</p></section>'; console.error(error); }
+  };
+  renderProjectDetail();
+}
+
+const serviceListing = document.querySelector('.services-page .services-list');
+if (serviceListing) {
+  const renderServiceListing = async () => {
+    try {
+      const services = await window.projectskevvDb.from('service_posts').select('id,title,slug,description,image,status,published_at,created_at', 'status=eq.published&order=published_at.desc.nullslast,created_at.desc');
+      serviceListing.innerHTML = '';
+      const count = document.querySelector('.services-page-title-row span');
+      if (count) count.textContent = `(${services.length})`;
+      services.forEach((service) => {
+        const link = document.createElement('a');
+        link.className = 'service-item';
+        link.href = `./branding/?slug=${encodeURIComponent(service.slug || service.id)}`;
+        link.innerHTML = `<div class="service-row"><div class="service-info"><div class="service-image"><img src="${service.image || ''}" alt="${service.title || ''}" /></div><span class="service-name">${service.title || 'Untitled service'}</span></div><div class="service-action"><span>VIEW PORTAL</span><span class="arrow-icon">→</span></div></div>`;
+        serviceListing.appendChild(link);
+      });
+    } catch (error) { console.error(error); }
+  };
+  renderServiceListing();
+}
+
+const homeServicesList = document.querySelector('#services .services-list');
+if (homeServicesList) {
+  const renderHomeServiceMedia = (url, title) => {
+    const media = document.createElement(url && /\.(mp4|webm|ogg|mov|m4v)(?:[?#].*)?$/i.test(url) ? 'video' : 'img');
+    if (!url) return media;
+    media.src = url;
+    media.alt = title;
+    if (media.tagName === 'VIDEO') { media.autoplay = true; media.muted = true; media.loop = true; media.playsInline = true; }
+    return media;
+  };
+  const renderHomeServices = async () => {
+    homeServicesList.innerHTML = '';
+    try {
+      const services = await window.projectskevvDb.from('service_posts').select('id,title,slug,description,image,status,published_at,created_at', 'status=eq.published&order=published_at.desc.nullslast,created_at.desc');
+      const count = document.querySelector('#services .services-count');
+      if (count) count.textContent = `(${services.length})`;
+      if (!services.length) { homeServicesList.innerHTML = '<p class="service-empty-state">No services published yet.</p>'; return; }
+      services.forEach((service) => {
+        const title = service.title || 'Untitled service';
+        const link = document.createElement('a');
+        link.className = 'service-item';
+        link.href = `./services/branding/?slug=${encodeURIComponent(service.slug || service.id)}`;
+        link.innerHTML = '<div class="service-row"><div class="service-info"><div class="service-image"></div><span class="service-name"></span></div><div class="service-action"><span>VIEW PORTAL</span><span class="arrow-icon">→</span></div></div>';
+        link.querySelector('.service-name').textContent = title;
+        const image = renderHomeServiceMedia(service.image, title);
+        link.querySelector('.service-image').appendChild(image);
+        homeServicesList.appendChild(link);
+      });
+    } catch (error) {
+      homeServicesList.innerHTML = '<p class="service-empty-state">Services are unavailable right now.</p>';
+      console.error(error);
+    }
+  };
+  renderHomeServices();
+}
+
+const footerServiceLists = [...document.querySelectorAll('.footer-services')];
+if (footerServiceLists.length) {
+  const renderFooterServices = async () => {
+    try {
+      const services = await window.projectskevvDb.from('service_posts').select('id,title,slug,image,status,published_at,created_at', 'status=eq.published&order=published_at.desc.nullslast,created_at.desc');
+      footerServiceLists.forEach((list) => {
+        list.innerHTML = '';
+        services.slice(0, 3).forEach((service) => {
+          const link = document.createElement('a');
+          link.href = `/services/branding/?slug=${encodeURIComponent(service.slug || service.id)}`;
+          const image = document.createElement('img');
+          image.src = service.image || '';
+          image.alt = service.title || '';
+          const title = document.createElement('span');
+          title.textContent = service.title || 'Untitled service';
+          const action = document.createElement('b');
+          action.textContent = 'VIEW PORTAL →';
+          link.append(image, title, action);
+          list.appendChild(link);
+        });
+      });
+    } catch (error) { console.error(error); }
+  };
+  renderFooterServices();
+}
+
+const serviceDetail = document.querySelector('.service-detail-page');
+const isPublicServiceDetail = serviceDetail && !new URLSearchParams(window.location.search).has('cms');
+if (isPublicServiceDetail) {
+  const servicePath = window.location.pathname.split('/').filter(Boolean);
+  const serviceSlug = new URLSearchParams(window.location.search).get('slug') || (servicePath.at(-1) === 'index.html' ? servicePath.at(-2) : servicePath.at(-1));
+  const renderServiceDetail = async () => {
+    try {
+      const rows = await window.projectskevvDb.from('service_posts').select('title,slug,description,scope,timeline,image,application_title,application_description,application_visuals,detail1_title,detail1_description,detail1_image,detail2_title,detail2_description,detail2_image,detail3_title,detail3_description,detail3_image,feature_title,feature_text,feature_image,website_image,status,published_at', `status=eq.published&slug=eq.${encodeURIComponent(serviceSlug)}`);
+      const service = rows[0];
+      if (!service) { document.querySelector('main').innerHTML = '<section class="project-empty-state"><p>This service is not published.</p></section>'; return; }
+      const setText = (selector, value) => { const element = document.querySelector(selector); if (element) element.textContent = value || ''; };
+      setText('#service-title', (service.title || 'Untitled service').toUpperCase());
+      setText('.project-detail-description', service.description);
+      setText('.project-detail-meta dd:nth-of-type(1)', service.scope);
+      setText('.project-detail-meta dd:nth-of-type(2)', service.timeline);
+      setText('#service-showcase-title', service.application_title);
+      setText('.service-showcase-intro > p', service.application_description);
+      [['detail1', 1], ['detail2', 2], ['detail3', 3]].forEach(([key, index]) => { setText(`.service-showcase-detail:nth-of-type(${index}) h3`, service[`${key}_title`]); setText(`.service-showcase-detail:nth-of-type(${index}) p`, service[`${key}_description`]); });
+      setText('.service-showcase-feature h3', service.feature_title);
+      setText('.service-showcase-feature p', service.feature_text);
+      const setImage = (selectorOrElement, source, alt) => { const image = typeof selectorOrElement === 'string' ? document.querySelector(selectorOrElement) : selectorOrElement; if (image && source) { image.src = source; image.alt = alt || ''; } };
+      setImage('.project-detail-lead-image img', service.image, service.title);
+      const showcaseImages = [...document.querySelectorAll('.service-showcase-visuals img')];
+      (Array.isArray(service.application_visuals) ? service.application_visuals : []).slice(0, 3).forEach((source, index) => setImage(showcaseImages[index], source, service.title));
+      setImage('.service-showcase-detail:nth-of-type(1) figure img', service.detail1_image, service.detail1_title);
+      setImage('.service-showcase-detail:nth-of-type(2) figure img', service.detail2_image, service.detail2_title);
+      setImage('.service-showcase-detail:nth-of-type(3) figure img', service.detail3_image, service.detail3_title);
+      setImage('.service-showcase-feature figure img', service.feature_image, service.feature_title);
+      setImage('.service-website-card img', service.website_image, service.title);
+    } catch (error) { document.querySelector('main').innerHTML = '<section class="project-empty-state"><p>Service unavailable right now.</p></section>'; console.error(error); }
+  };
+  renderServiceDetail();
+}
+
 const journalArticle = document.querySelector('.journal-article-page');
 const isPublicJournalArticle = journalArticle && !new URLSearchParams(window.location.search).has('cms');
 if (isPublicJournalArticle) {
   const articlePath = window.location.pathname.split('/').filter(Boolean);
-  const articleSlug = articlePath.at(-1) === 'index.html' ? articlePath.at(-2) : articlePath.at(-1);
+  const articleSlug = new URLSearchParams(window.location.search).get('slug') || (articlePath.at(-1) === 'index.html' ? articlePath.at(-2) : articlePath.at(-1));
   const renderJournalArticle = async () => {
     try {
       const posts = await window.projectskevvDb.from('journal_posts').select('title,slug,description,content_html,cover_image_url,tag,minutes_read,author_name,author_role,author_image_url,published_at', `status=eq.published&slug=eq.${encodeURIComponent(articleSlug)}`);
@@ -214,10 +620,14 @@ const imageTrack = document.querySelector('.framer-1p3njx7-container');
 
 if (imageTrack) {
   [...imageTrack.children].forEach((figure) => {
+    const sourceMedia = figure.querySelector('img, video');
+    const mediaKey = sourceMedia ? homepageMediaKey(sourceMedia) : '';
     const clone = figure.cloneNode(true);
     clone.setAttribute('aria-hidden', 'true');
     clone.querySelectorAll('button').forEach((button) => button.remove());
     clone.querySelector('img')?.setAttribute('alt', '');
+    const cloneMedia = clone.querySelector('img, video');
+    if (cloneMedia && mediaKey) cloneMedia.dataset.homeMediaKey = mediaKey;
     imageTrack.appendChild(clone);
   });
 }
@@ -367,6 +777,9 @@ if (cmsPreview) {
   const postCmsJournalChange = (payload) => {
     if (isCmsJournalDetail && window.parent !== window) window.parent.postMessage({ source: 'projectskevv-cms-journal', ...payload }, '*');
   };
+  const postCmsHomeChange = (payload) => {
+    if (isHomepage && window.parent !== window) window.parent.postMessage({ source: 'projectskevv-cms-home', ...payload }, '*');
+  };
   if (isCmsJournalDetail) {
     const journalEditorMediaStyle = document.createElement('style');
     journalEditorMediaStyle.textContent = '.journal-article-copy img, .journal-article-copy video { display:block; height:auto; max-width:100%; } .journal-article-copy figure { margin: 18px 0; max-width:100%; }';
@@ -403,11 +816,13 @@ if (cmsPreview) {
     const gallery = document.querySelector('.image-gallery');
     if (gallery) {
       gallery.innerHTML = '';
+      const columns = [document.createElement('div'), document.createElement('div')];
+      columns.forEach((column) => { column.className = 'gallery-column'; gallery.appendChild(column); });
       (project.gallery || []).forEach((source, index) => {
         const figure = document.createElement('figure');
         figure.className = `gallery-item ${index === 0 ? 'gallery-item-large' : 'gallery-item-medium'}`;
         setProjectMedia(figure, source, `${project.title || 'Project'} gallery media ${index + 1}`);
-        gallery.appendChild(figure);
+        columns[index % 2].appendChild(figure);
       });
     }
   };
@@ -519,7 +934,18 @@ if (cmsPreview) {
     .cms-pricing-feature-row input { border: 1px solid #ddd; border-radius: 4px; min-width: 0; padding: 7px; width: 100%; }
     .cms-pricing-feature-row button { background: #fff; border: 1px solid #ddd; border-radius: 4px; color: #777; cursor: pointer; padding: 6px 8px; }
     .cms-pricing-add { background: #087ef5; border: 0; border-radius: 4px; color: #fff; cursor: pointer; font-size: 11px; margin-top: 10px; padding: 8px 10px; width: 100%; }
+    .cms-pricing-add-card { background: #222; border: 0; border-radius: 4px; color: #fff; cursor: pointer; font-size: 11px; margin-top: 6px; padding: 8px 10px; width: 100%; }
+    .cms-pricing-remove-card { background: #fff; border: 1px solid #d9d9d9; border-radius: 4px; color: #777; cursor: pointer; font-size: 11px; margin-top: 6px; padding: 8px 10px; width: 100%; }
     .cms-pricing-editor small { color: #999; display: block; font-size: 10px; margin-top: 10px; }
+    .cms-home-settings-editor { background: #fff; border: 1px solid #d9d9d9; border-radius: 8px; bottom: 18px; box-shadow: 0 12px 35px rgba(0,0,0,.18); color: #222; font: 13px/1.35 Inter, Arial, sans-serif; max-height: min(620px, calc(100vh - 36px)); overflow: auto; padding: 13px; position: fixed; right: 18px; width: 330px; z-index: 2147483642; }
+    .cms-home-settings-editor-header { align-items: center; display: flex; justify-content: space-between; }
+    .cms-home-settings-editor-header button { background: none; border: 0; color: #777; cursor: pointer; font-size: 20px; line-height: 1; padding: 0; }
+    .cms-home-settings-editor > p { color: #777; font-size: 11px; margin: 10px 0; }
+    .cms-home-settings-editor label { color: #555; display: block; font-size: 11px; margin: 9px 0 4px; }
+    .cms-home-settings-editor input { background: #fff; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; padding: 7px; width: 100%; }
+    .cms-home-social-row { display: grid; gap: 5px; grid-template-columns: 62px 1fr; margin-bottom: 6px; }
+    .cms-home-settings-apply { background: #087ef5; border: 0; border-radius: 4px; color: #fff; cursor: pointer; font-size: 11px; margin-top: 8px; padding: 8px 10px; width: 100%; }
+    .cms-home-settings-editor small { color: #999; display: block; font-size: 10px; margin-top: 10px; }
   `;
   document.head.appendChild(cmsEditorStyle);
 
@@ -542,7 +968,7 @@ if (cmsPreview) {
     element.dataset.editorLabel = cmsEditorLabel(element);
   });
 
-  const cmsLockedMedia = (element) => Boolean(element.closest('.featured-project, .footer-services, [class*="projects"], [class*="services"], a[href*="projects"], a[href*="services"]'));
+  const cmsLockedMedia = (element) => Boolean(element.closest('.footer-services, [class*="projects"], [class*="services"], [class*="journal"], a[href*="projects"], a[href*="services"], a[href*="journal"]'));
   const cmsLockedContent = (element) => Boolean(element.closest('#projects, #services, #journal, .featured-project, .footer-services, [class*="projects"], [class*="services"], [class*="journal"], a[href*="projects"], a[href*="services"], a[href*="journal"]'));
   const cmsTextSelector = 'h1, h2, h3, h4, h5, h6, p, span, a, button, li, label, summary, dd';
   const cmsMediaEditor = document.createElement('aside');
@@ -556,9 +982,53 @@ if (cmsPreview) {
     <p class="cms-media-editor-name" data-cms-media-name></p>
     <label class="cms-media-file">Choose image or video<input type="file" accept="image/*,video/*" data-cms-media-file /></label>
     <div class="cms-media-url-row"><input type="url" placeholder="Paste media URL" data-cms-media-url /><button type="button" data-cms-media-apply>Apply</button></div>
-    <small>Preview only until media storage is connected.</small>
+    <small>Paste a URL, then use Publish in the CMS bar to save it.</small>
   `;
   document.body.appendChild(cmsMediaEditor);
+
+  const cmsHomeSettingsEditor = document.createElement('aside');
+  cmsHomeSettingsEditor.className = 'cms-home-settings-editor';
+  cmsHomeSettingsEditor.hidden = true;
+  cmsHomeSettingsEditor.innerHTML = `
+    <div class="cms-home-settings-editor-header"><strong>Home brand settings</strong><button type="button" data-cms-home-settings-close aria-label="Close settings">×</button></div>
+    <p>Update the shared navbar logo and footer social links.</p>
+    <label for="cms-home-logo">Navbar logo</label>
+    <input id="cms-home-logo" type="text" data-cms-home-logo />
+    <label>Footer social links</label>
+    <div data-cms-home-social-list></div>
+    <button class="cms-home-settings-apply" type="button" data-cms-home-settings-apply>Apply changes</button>
+    <small>Use Publish in the CMS bar to save these settings.</small>
+  `;
+  document.body.appendChild(cmsHomeSettingsEditor);
+  const cmsHomeLogo = cmsHomeSettingsEditor.querySelector('[data-cms-home-logo]');
+  const cmsHomeSocialList = cmsHomeSettingsEditor.querySelector('[data-cms-home-social-list]');
+  const cmsHomeSettingsClose = cmsHomeSettingsEditor.querySelector('[data-cms-home-settings-close]');
+  const cmsHomeSettingsApply = cmsHomeSettingsEditor.querySelector('[data-cms-home-settings-apply]');
+  const closeCmsHomeSettingsEditor = () => { cmsHomeSettingsEditor.hidden = true; };
+  const openCmsHomeSettingsEditor = () => {
+    if (!isHomepage) return;
+    cmsHomeLogo.value = document.querySelector('.brand-mark')?.textContent.trim() || 'Projectskevv';
+    cmsHomeSocialList.innerHTML = '';
+    const links = [...document.querySelectorAll('.footer-socials a')];
+    (links.length ? links : [{ textContent: 'Be', href: '#contact' }, { textContent: '◉', href: '#contact' }, { textContent: '𝕏', href: '#contact' }, { textContent: 'in', href: '#contact' }]).forEach((link) => {
+      const row = document.createElement('div');
+      row.className = 'cms-home-social-row';
+      row.innerHTML = `<input type="text" aria-label="Social label" value="${String(link.textContent || '').replace(/"/g, '&quot;')}" /><input type="url" aria-label="Social URL" value="${String(link.getAttribute?.('href') || link.href || '').replace(/"/g, '&quot;')}" />`;
+      cmsHomeSocialList.appendChild(row);
+    });
+    cmsHomeSettingsEditor.hidden = false;
+  };
+  cmsHomeSettingsApply.addEventListener('click', () => {
+    const socialLinks = [...cmsHomeSocialList.querySelectorAll('.cms-home-social-row')].map((row) => {
+      const inputs = row.querySelectorAll('input');
+      return { label: inputs[0].value.trim(), url: inputs[1].value.trim() || '#contact' };
+    }).filter((item) => item.label);
+    const settings = { logo_text: cmsHomeLogo.value.trim() || 'Projectskevv', social_links: socialLinks };
+    applyHomepageSettings(settings);
+    postCmsHomeChange({ type: 'settings-change', settings });
+    closeCmsHomeSettingsEditor();
+  });
+  cmsHomeSettingsClose.addEventListener('click', closeCmsHomeSettingsEditor);
 
   let cmsActiveMedia = null;
   let cmsActiveObjectUrl = null;
@@ -593,6 +1063,7 @@ if (cmsPreview) {
 
   const applyCmsMedia = (source) => {
     if (!cmsActiveMedia || !source) return;
+    const homeMediaId = isHomepage && !cmsLockedMedia(cmsActiveMedia) ? homepageMediaKey(cmsActiveMedia) : '';
     if (cmsActiveObjectUrl) URL.revokeObjectURL(cmsActiveObjectUrl);
     cmsActiveObjectUrl = source;
     const sourceIsVideo = /\.(mp4|webm|ogg|mov)(?:[?#].*)?$/i.test(source);
@@ -601,6 +1072,7 @@ if (cmsPreview) {
       const replacement = document.createElement(sourceIsVideo ? 'video' : 'img');
       replacement.className = cmsActiveMedia.className;
       replacement.dataset.editorLabel = sourceIsVideo ? 'Video' : 'Image';
+      if (homeMediaId) replacement.dataset.homeMediaKey = homeMediaId;
       replacement.alt = cmsActiveMedia.alt || '';
       cmsActiveMedia.replaceWith(replacement);
       cmsActiveMedia = replacement;
@@ -619,6 +1091,7 @@ if (cmsPreview) {
     }
     if (isCmsServiceDetail) postCmsServiceChange({ type: 'media-change', field: 'image', value: source });
     if (isCmsJournalDetail) postCmsJournalChange({ type: 'media-change', field: cmsActiveMedia?.closest('.journal-author') ? 'authorImage' : 'image', value: source });
+    if (homeMediaId && window.parent !== window) window.parent.postMessage({ source: 'projectskevv-cms-home', type: 'media-change', id: homeMediaId, value: source }, '*');
     cmsMediaEditor.hidden = true;
     cmsMediaEditorOpen = false;
   };
@@ -878,7 +1351,7 @@ if (cmsPreview) {
   cmsAccordionClose.addEventListener('click', closeCmsAccordionEditor);
 
   const cmsPricingSection = document.querySelector('#pricing');
-  const cmsPricingCards = [...document.querySelectorAll('#pricing .pricing-card')];
+  let cmsPricingCards = [...document.querySelectorAll('#pricing .pricing-card')];
   const cmsPricingEditor = document.createElement('aside');
   cmsPricingEditor.className = 'cms-pricing-editor';
   cmsPricingEditor.hidden = true;
@@ -888,15 +1361,52 @@ if (cmsPreview) {
     <select data-cms-pricing-plan aria-label="Choose pricing plan"></select>
     <div class="cms-pricing-feature-list" data-cms-pricing-features></div>
     <button class="cms-pricing-add" type="button" data-cms-pricing-add>+ Add mock feature</button>
-    <small>Preview only. Pricing plans stay independent from the Projects, Services, and Journal collections.</small>
+    <button class="cms-pricing-add-card" type="button" data-cms-pricing-add-card>+ Add pricing card</button>
+    <small>Preview only for now. Pricing plans stay independent from the Projects, Services, and Journal collections.</small>
   `;
   document.body.appendChild(cmsPricingEditor);
 
   const cmsPricingPlan = cmsPricingEditor.querySelector('[data-cms-pricing-plan]');
   const cmsPricingFeatures = cmsPricingEditor.querySelector('[data-cms-pricing-features]');
   const cmsPricingAdd = cmsPricingEditor.querySelector('[data-cms-pricing-add]');
+  const cmsPricingAddCard = cmsPricingEditor.querySelector('[data-cms-pricing-add-card]');
   const cmsPricingClose = cmsPricingEditor.querySelector('[data-cms-pricing-close]');
+  const cmsPricingRemoveCard = document.createElement('button');
+  cmsPricingRemoveCard.className = 'cms-pricing-remove-card';
+  cmsPricingRemoveCard.type = 'button';
+  cmsPricingRemoveCard.textContent = 'Remove selected card';
+  cmsPricingEditor.insertBefore(cmsPricingRemoveCard, cmsPricingEditor.querySelector('small'));
   let cmsPricingActiveIndex = 0;
+
+  const ensureCmsPricingIds = () => {
+    cmsPricingCards.forEach((card, index) => {
+      if (!card.dataset.pricingId) card.dataset.pricingId = `pricing-plan-${index + 1}`;
+    });
+  };
+  const cmsPricingPlanData = () => cmsPricingCards.map((card, index) => ({
+    id: card.dataset.pricingId || `pricing-plan-${index + 1}`,
+    title: card.querySelector('.plan-title-row h3, .pricing-card-header h3')?.textContent.trim() || 'Untitled plan',
+    eyebrow: card.querySelector('.availability-label')?.textContent.trim() || '',
+    description: card.querySelector('.pricing-card-header p')?.textContent.trim() || '',
+    price: card.querySelector('.card-price strong')?.textContent.trim() || '$0',
+    price_unit: card.querySelector('.card-price span')?.textContent.trim() || '/project',
+    features: [...card.querySelectorAll('.features li')].map((feature) => feature.textContent.trim()).filter(Boolean),
+    cta_label: [...(card.querySelector('.pricing-cta')?.childNodes || [])].filter((node) => node.nodeType === Node.TEXT_NODE).map((node) => node.textContent).join('').trim() || 'START PROJECT',
+    is_popular: card.classList.contains('popular'),
+    sort_order: index,
+    status: 'published'
+  }));
+  const postCmsPricingDraft = () => {
+    ensureCmsPricingIds();
+    if (window.parent !== window) window.parent.postMessage({ source: 'projectskevv-cms-home', type: 'pricing-change', plans: cmsPricingPlanData() }, '*');
+  };
+  ensureCmsPricingIds();
+  document.addEventListener('projectskevv:pricing-updated', () => {
+    cmsPricingCards = [...document.querySelectorAll('#pricing .pricing-card')];
+    ensureCmsPricingIds();
+    if (!cmsPricingEditor.hidden) renderCmsPricingPlans();
+    postCmsPricingDraft();
+  });
 
   const renderCmsPricingFeatures = () => {
     const card = cmsPricingCards[cmsPricingActiveIndex];
@@ -909,14 +1419,26 @@ if (cmsPreview) {
       input.type = 'text';
       input.value = feature.textContent.trim();
       input.setAttribute('aria-label', 'Pricing feature');
-      input.addEventListener('input', () => { feature.textContent = input.value; });
+      input.addEventListener('input', () => { feature.textContent = input.value; postCmsPricingDraft(); });
       const remove = document.createElement('button');
       remove.type = 'button';
       remove.textContent = 'Remove';
-      remove.addEventListener('click', () => { feature.remove(); renderCmsPricingFeatures(); });
+        remove.addEventListener('click', () => { feature.remove(); renderCmsPricingFeatures(); postCmsPricingDraft(); });
       row.append(input, remove);
       cmsPricingFeatures.appendChild(row);
     });
+  };
+
+  const renderCmsPricingPlans = () => {
+    cmsPricingPlan.innerHTML = '';
+    cmsPricingCards.forEach((card, index) => {
+      const option = document.createElement('option');
+      option.value = String(index);
+      option.textContent = card.querySelector('.plan-title-row h3, .pricing-card-header h3')?.textContent.trim() || `Plan ${index + 1}`;
+      cmsPricingPlan.appendChild(option);
+    });
+    cmsPricingPlan.value = String(cmsPricingActiveIndex);
+    renderCmsPricingFeatures();
   };
 
   const openCmsPricingEditor = () => {
@@ -928,15 +1450,7 @@ if (cmsPreview) {
     closeCmsAccordionEditor();
     cmsMediaEditor.hidden = true;
     cmsMediaEditorOpen = false;
-    cmsPricingPlan.innerHTML = '';
-    cmsPricingCards.forEach((card, index) => {
-      const option = document.createElement('option');
-      option.value = String(index);
-      option.textContent = card.querySelector('.plan-title-row h3, .pricing-card-header h3')?.textContent.trim() || `Plan ${index + 1}`;
-      cmsPricingPlan.appendChild(option);
-    });
-    cmsPricingPlan.value = String(cmsPricingActiveIndex);
-    renderCmsPricingFeatures();
+    renderCmsPricingPlans();
     const bounds = cmsPricingSection.getBoundingClientRect();
     const panelWidth = cmsPricingEditor.offsetWidth || 330;
     const panelHeight = Math.min(cmsPricingEditor.offsetHeight || 360, window.innerHeight - 36);
@@ -957,6 +1471,44 @@ if (cmsPreview) {
     feature.textContent = 'New pricing feature';
     card.querySelector('.features')?.appendChild(feature);
     renderCmsPricingFeatures();
+    postCmsPricingDraft();
+  });
+  cmsPricingAddCard.addEventListener('click', () => {
+    const source = cmsPricingCards[0];
+    if (!source) return;
+    const card = source.cloneNode(true);
+    card.classList.remove('popular');
+    card.querySelector('.popular-tag')?.remove();
+    const title = card.querySelector('.plan-title-row h3, .pricing-card-header h3');
+    if (title) title.textContent = 'NEW PRICING PLAN';
+    const description = card.querySelector('.pricing-card-header p');
+    if (description) description.textContent = 'Add a short description for this plan.';
+    const price = card.querySelector('.card-price strong');
+    if (price) price.textContent = '$0';
+    const priceUnit = card.querySelector('.card-price span');
+    if (priceUnit) priceUnit.textContent = '/project';
+    card.querySelectorAll('.features li').forEach((feature, index) => { feature.textContent = index === 0 ? 'Add your first feature' : 'Add another feature'; });
+    card.querySelector('.pricing-cta')?.replaceChildren(document.createTextNode('START PROJECT '), Object.assign(document.createElement('span'), { textContent: '↗' }));
+    card.querySelectorAll(cmsEditableSelector).forEach((element) => { element.classList.add('cms-editor-target'); element.dataset.editorLabel = cmsEditorLabel(element); });
+    source.parentElement.appendChild(card);
+    cmsPricingCards = [...document.querySelectorAll('#pricing .pricing-card')];
+    const count = document.querySelector('#pricing .pricing-title-row span');
+    if (count) count.textContent = `(${cmsPricingCards.length})`;
+    cmsPricingActiveIndex = cmsPricingCards.length - 1;
+    renderCmsPricingPlans();
+    postCmsPricingDraft();
+  });
+  cmsPricingRemoveCard.addEventListener('click', () => {
+    if (cmsPricingCards.length <= 1) return;
+    const card = cmsPricingCards[cmsPricingActiveIndex];
+    if (!card) return;
+    card.remove();
+    cmsPricingCards = [...document.querySelectorAll('#pricing .pricing-card')];
+    cmsPricingActiveIndex = Math.max(0, Math.min(cmsPricingActiveIndex, cmsPricingCards.length - 1));
+    const count = document.querySelector('#pricing .pricing-title-row span');
+    if (count) count.textContent = `(${cmsPricingCards.length})`;
+    renderCmsPricingPlans();
+    postCmsPricingDraft();
   });
   cmsPricingClose.addEventListener('click', closeCmsPricingEditor);
 
@@ -1003,11 +1555,23 @@ if (cmsPreview) {
 
   document.addEventListener('click', (event) => {
     if (event.target.closest?.('.cms-media-editor')) return;
+    if (event.target.closest?.('.cms-home-settings-editor')) return;
     if (event.target.closest?.('.cms-project-editor')) return;
     if (event.target.closest?.('.cms-service-editor')) return;
     if (event.target.closest?.('.cms-journal-editor')) return;
     if (event.target.closest?.('.cms-accordion-editor')) return;
     if (event.target.closest?.('.cms-pricing-editor')) return;
+    if (isHomepage && event.target.closest?.('.brand-mark, .footer-socials')) {
+      event.preventDefault();
+      event.stopPropagation();
+      closeCmsProjectEditor();
+      closeCmsServiceEditor();
+      closeCmsJournalEditor();
+      closeCmsAccordionEditor();
+      closeCmsPricingEditor();
+      openCmsHomeSettingsEditor();
+      return;
+    }
     const media = event.target.closest?.('img, video');
     if (media && !cmsLockedMedia(media)) {
       event.preventDefault();
@@ -1065,7 +1629,7 @@ if (cmsPreview) {
       textTarget.contentEditable = 'true';
       textTarget.spellcheck = true;
       textTarget.focus();
-      if ((isCmsProjectDetail || isCmsServiceDetail) && !textTarget.dataset.cmsProjectInputBound) {
+      if ((isCmsProjectDetail || isCmsServiceDetail || isHomepage) && !textTarget.dataset.cmsProjectInputBound) {
         textTarget.dataset.cmsProjectInputBound = 'true';
         textTarget.addEventListener('input', () => {
           const field = textTarget.matches('.journal-article-hero h1') ? 'title'
@@ -1088,6 +1652,7 @@ if (cmsPreview) {
             if (isCmsJournalDetail) postCmsJournalChange({ type: 'field-change', field, value: field === 'content' ? document.querySelector('.journal-article-copy')?.innerHTML || '' : textTarget.textContent.trim() });
             else (isCmsServiceDetail ? postCmsServiceChange : postCmsProjectChange)({ type: 'field-change', field, value: textTarget.textContent.trim() });
           }
+          if (isHomepage && textTarget.closest('.pricing-card')) postCmsPricingDraft();
         });
       }
     }
