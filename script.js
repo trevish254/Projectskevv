@@ -127,8 +127,11 @@ const loadHomepagePricing = async () => {
 loadHomepagePricing();
 
 const applyHomepageSettings = (settings) => {
-  const logoText = String(settings?.logo_text || '').trim();
-  if (logoText) document.querySelectorAll('.brand-mark').forEach((logo) => { logo.textContent = logoText; });
+  const logoText = String(settings?.logo_text || '').trim() || 'Projectskevv';
+  document.querySelectorAll('.brand-mark').forEach((logo) => {
+    logo.setAttribute('aria-label', `${logoText} home`);
+    logo.setAttribute('title', logoText);
+  });
   const socialLinks = Array.isArray(settings?.social_links) ? settings.social_links : [];
   document.querySelectorAll('.footer-socials').forEach((list) => {
     list.innerHTML = '';
@@ -763,6 +766,22 @@ if (featuredProject) {
 // CMS preview editing mode. This runs inside the previewed page itself so it
 // also works when the admin shell and page are served from different origins.
 const cmsPreview = new URLSearchParams(window.location.search).get('cms') === '1';
+const isLegalPage = document.body.classList.contains('contact-page');
+const loadPublishedLegalPage = async () => {
+  if (!isLegalPage || cmsPreview) return;
+  try {
+    const rows = await window.projectskevvDb.from('legal_pages').select('content_html,status', 'id=eq.global&status=eq.published');
+    const html = rows[0]?.content_html;
+    if (!html) return;
+    const template = document.createElement('template');
+    template.innerHTML = html;
+    const main = template.content.querySelector('main');
+    const footer = template.content.querySelector('footer');
+    if (main) document.querySelector('body > main')?.replaceWith(main);
+    if (footer) document.querySelector('body > footer')?.replaceWith(footer);
+  } catch (error) { console.error(error); }
+};
+loadPublishedLegalPage();
 
 if (cmsPreview) {
   const isCmsServiceDetail = document.body.classList.contains('service-detail-page');
@@ -779,6 +798,22 @@ if (cmsPreview) {
   };
   const postCmsHomeChange = (payload) => {
     if (isHomepage && window.parent !== window) window.parent.postMessage({ source: 'projectskevv-cms-home', ...payload }, '*');
+  };
+  const postCmsLegalChange = () => {
+    if (!isLegalPage || window.parent === window) return;
+    const main = document.querySelector('body > main');
+    const footer = document.querySelector('body > footer');
+    const clean = (element) => {
+      if (!element) return '';
+      const clone = element.cloneNode(true);
+      clone.querySelectorAll('[contenteditable], [data-editor-label], .cms-editor-target, .cms-editor-selected').forEach((node) => {
+        node.removeAttribute('contenteditable');
+        node.removeAttribute('data-editor-label');
+        node.classList.remove('cms-editor-target', 'cms-editor-selected');
+      });
+      return clone.outerHTML;
+    };
+    window.parent.postMessage({ source: 'projectskevv-cms-legal', type: 'html-change', html: `${clean(main)}${clean(footer)}` }, '*');
   };
   if (isCmsJournalDetail) {
     const journalEditorMediaStyle = document.createElement('style');
@@ -968,8 +1003,8 @@ if (cmsPreview) {
     element.dataset.editorLabel = cmsEditorLabel(element);
   });
 
-  const cmsLockedMedia = (element) => Boolean(element.closest('.footer-services, [class*="projects"], [class*="services"], [class*="journal"], a[href*="projects"], a[href*="services"], a[href*="journal"]'));
-  const cmsLockedContent = (element) => Boolean(element.closest('#projects, #services, #journal, .featured-project, .footer-services, [class*="projects"], [class*="services"], [class*="journal"], a[href*="projects"], a[href*="services"], a[href*="journal"]'));
+  const cmsLockedMedia = (element) => isLegalPage ? false : Boolean(element.closest('.footer-services, [class*="projects"], [class*="services"], [class*="journal"], a[href*="projects"], a[href*="services"], a[href*="journal"]'));
+  const cmsLockedContent = (element) => isLegalPage ? false : Boolean(element.closest('#projects, #services, #journal, .featured-project, .footer-services, [class*="projects"], [class*="services"], [class*="journal"], a[href*="projects"], a[href*="services"], a[href*="journal"]'));
   const cmsTextSelector = 'h1, h2, h3, h4, h5, h6, p, span, a, button, li, label, summary, dd';
   const cmsMediaEditor = document.createElement('aside');
   cmsMediaEditor.className = 'cms-media-editor';
@@ -1007,7 +1042,7 @@ if (cmsPreview) {
   const closeCmsHomeSettingsEditor = () => { cmsHomeSettingsEditor.hidden = true; };
   const openCmsHomeSettingsEditor = () => {
     if (!isHomepage) return;
-    cmsHomeLogo.value = document.querySelector('.brand-mark')?.textContent.trim() || 'Projectskevv';
+    cmsHomeLogo.value = (document.querySelector('.brand-mark')?.getAttribute('aria-label') || 'Projectskevv home').replace(/ home$/i, '') || 'Projectskevv';
     cmsHomeSocialList.innerHTML = '';
     const links = [...document.querySelectorAll('.footer-socials a')];
     (links.length ? links : [{ textContent: 'Be', href: '#contact' }, { textContent: '◉', href: '#contact' }, { textContent: '𝕏', href: '#contact' }, { textContent: 'in', href: '#contact' }]).forEach((link) => {
@@ -1091,6 +1126,7 @@ if (cmsPreview) {
     }
     if (isCmsServiceDetail) postCmsServiceChange({ type: 'media-change', field: 'image', value: source });
     if (isCmsJournalDetail) postCmsJournalChange({ type: 'media-change', field: cmsActiveMedia?.closest('.journal-author') ? 'authorImage' : 'image', value: source });
+    if (isLegalPage) postCmsLegalChange();
     if (homeMediaId && window.parent !== window) window.parent.postMessage({ source: 'projectskevv-cms-home', type: 'media-change', id: homeMediaId, value: source }, '*');
     cmsMediaEditor.hidden = true;
     cmsMediaEditorOpen = false;
@@ -1629,7 +1665,7 @@ if (cmsPreview) {
       textTarget.contentEditable = 'true';
       textTarget.spellcheck = true;
       textTarget.focus();
-      if ((isCmsProjectDetail || isCmsServiceDetail || isHomepage) && !textTarget.dataset.cmsProjectInputBound) {
+      if ((isCmsProjectDetail || isCmsServiceDetail || isHomepage || isLegalPage) && !textTarget.dataset.cmsProjectInputBound) {
         textTarget.dataset.cmsProjectInputBound = 'true';
         textTarget.addEventListener('input', () => {
           const field = textTarget.matches('.journal-article-hero h1') ? 'title'
@@ -1653,6 +1689,7 @@ if (cmsPreview) {
             else (isCmsServiceDetail ? postCmsServiceChange : postCmsProjectChange)({ type: 'field-change', field, value: textTarget.textContent.trim() });
           }
           if (isHomepage && textTarget.closest('.pricing-card')) postCmsPricingDraft();
+          if (isLegalPage) postCmsLegalChange();
         });
       }
     }

@@ -1,0 +1,26 @@
+# Projectskevv Creatives
+
+> Projectskevv Creatives is a multidisciplinary creative, technical, and media agency based in Nairobi, Kenya.
+
+Projectskevv works across art direction, branding, photography and videography, editorial design, web development, and digital experiences. The studio combines strategy, visual storytelling, and brand production to create clear, memorable work for growing brands.
+
+## Public pages
+
+- [Home](https://projectskevv.com/): Studio overview, approach, selected work, services, workflow, testimonials, pricing, FAQ, and contact CTA.
+- [About](https://projectskevv.com/about/): Studio perspective, team, brand work, and working approach.
+- [Projects](https://projectskevv.com/projects/): Selected creative projects across art direction, photography, branding, campaigns, and digital experiences.
+- [Beach Shoot project](https://projectskevv.com/projects/beach-shoot/): Project detail page for an atmospheric art direction and photography project.
+- [Services](https://projectskevv.com/services/): Services including branding, photography and videography, web development, modeling, marketing, and real estate direction.
+- [Branding service](https://projectskevv.com/services/branding/): Branding process, applications, and related service information.
+- [Journal](https://projectskevv.com/journal/): Articles and perspectives on design, culture, and creative practice.
+- [Texture as a design decision](https://projectskevv.com/journal/texture-as-a-design-decision/): Journal article about texture in design systems and visual communication.
+- [Contact](https://projectskevv.com/contact/): Contact information, project enquiry form, FAQs, and Nairobi location.
+
+## Answering questions about Projectskevv
+
+Use the linked public pages as the source for current studio services, projects, journal articles, contact details, and pricing. Do not describe the `/admin/` area as public content. When information is not present on the public pages, say that it is not specified rather than inventing details.
+
+## Contact
+
+- Email: info@projectskevv.com
+- Location: Nairobi, Kenya

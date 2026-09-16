@@ -78,6 +78,76 @@ const cmsPages = {
   legal: { label: 'Legal', source: '../contact/index.html' }
 };
 
+const adminShell = document.querySelector('.admin-shell');
+const adminSidebarToggle = document.querySelector('.admin-sidebar-toggle');
+if (adminShell && adminSidebarToggle) {
+  const setSidebarCollapsed = (collapsed) => {
+    adminShell.classList.toggle('is-sidebar-collapsed', collapsed);
+    adminSidebarToggle.setAttribute('aria-expanded', String(!collapsed));
+    adminSidebarToggle.setAttribute('aria-label', collapsed ? 'Expand admin sidebar' : 'Collapse admin sidebar');
+    adminSidebarToggle.title = collapsed ? 'Expand sidebar' : 'Collapse sidebar';
+    try { window.localStorage.setItem('projectskevv-admin-sidebar-collapsed', String(collapsed)); } catch {}
+  };
+  let initiallyCollapsed = false;
+  try { initiallyCollapsed = window.localStorage.getItem('projectskevv-admin-sidebar-collapsed') === 'true'; } catch {}
+  setSidebarCollapsed(initiallyCollapsed);
+  adminSidebarToggle.addEventListener('click', () => setSidebarCollapsed(!adminShell.classList.contains('is-sidebar-collapsed')));
+}
+
+const adminFieldSchemas = {
+  home: {
+    label: 'Home',
+    groups: [
+      { label: 'Brand settings · home_settings', fields: [['Logo text', 'text'], ['Social links', 'array'], ['Status', 'status'], ['Published at', 'date']] },
+      { label: 'Media · home_media', fields: [['Media URL', 'media'], ['Status', 'status'], ['Published at', 'date']] },
+      { label: 'Pricing · home_pricing', fields: [['Title', 'text'], ['Eyebrow', 'text'], ['Description', 'long-text'], ['Price', 'text'], ['Price unit', 'text'], ['Features', 'array'], ['CTA label', 'text'], ['Popular', 'boolean'], ['Sort order', 'number'], ['Status', 'status']] }
+    ]
+  },
+  services: {
+    label: 'Services',
+    groups: [{ label: 'service_posts', fields: [['Title', 'text'], ['Slug', 'text'], ['Status', 'status'], ['Description', 'long-text'], ['Scope', 'text'], ['Timeline', 'text'], ['Image', 'media'], ['Application title', 'text'], ['Application description', 'long-text'], ['Application visuals', 'array'], ['Feature title', 'text'], ['Feature text', 'long-text'], ['Feature image', 'media'], ['Website image', 'media'], ['Published at', 'date']] }]
+  },
+  projects: {
+    label: 'Projects',
+    groups: [{ label: 'project_posts', fields: [['Status', 'status'], ['Slug', 'text'], ['Description', 'long-text'], ['Body text', 'long-text'], ['Cover image URL', 'media'], ['Tag', 'text'], ['Duration', 'text'], ['Client', 'text'], ['Website URL', 'link'], ['Gallery URLs', 'array'], ['Video URL', 'media'], ['Video poster URL', 'media'], ['Published at', 'date']] }]
+  },
+  journal: {
+    label: 'Journal',
+    groups: [{ label: 'journal_posts', fields: [['Title', 'text'], ['Slug', 'text'], ['Status', 'status'], ['Description', 'long-text'], ['Content HTML', 'long-text'], ['Cover image URL', 'media'], ['Tag', 'text'], ['Minutes read', 'number'], ['Author name', 'text'], ['Author role', 'text'], ['Author image URL', 'media'], ['Published at', 'date']] }]
+  },
+  legal: {
+    label: 'Legal',
+    groups: [{ label: 'Static contact/legal content', fields: [['Contact details', 'text'], ['Privacy policy', 'long-text'], ['Terms of use', 'long-text']] }]
+  }
+};
+
+const adminTabs = [...document.querySelectorAll('[data-admin-tab]')];
+const adminCollections = document.querySelector('.admin-collections');
+const adminSearch = document.querySelector('.admin-search');
+const adminFieldsPanel = document.querySelector('[data-admin-fields-panel]');
+const adminPluginsPanel = document.querySelector('[data-admin-plugins-panel]');
+const adminFieldsCollection = document.querySelector('[data-admin-fields-collection]');
+const adminFieldsList = document.querySelector('[data-admin-fields-list]');
+const fieldIcon = { text: 'T', 'long-text': '≡', media: '▧', link: '↗', array: '⋮', status: '◌', date: '◷', number: '#' , boolean: '◉' };
+const renderAdminFields = (collection = 'projects') => {
+  const schema = adminFieldSchemas[collection] || adminFieldSchemas.projects;
+  adminFieldsList.innerHTML = schema.groups.map((group) => `<div class="admin-field-group-label">${group.label}</div>${group.fields.map(([name, type]) => `<div class="admin-field-row"><span class="admin-field-icon" aria-hidden="true">${fieldIcon[type] || 'T'}</span><span class="admin-field-name">${name}</span></div>`).join('')}`).join('');
+};
+if (adminFieldsCollection && adminFieldsList) {
+  Object.entries(adminFieldSchemas).forEach(([key, schema]) => { const option = document.createElement('option'); option.value = key; option.textContent = schema.label; adminFieldsCollection.appendChild(option); });
+  adminFieldsCollection.value = new URLSearchParams(window.location.search).get('page') || 'projects';
+  renderAdminFields(adminFieldsCollection.value);
+  adminFieldsCollection.addEventListener('change', () => renderAdminFields(adminFieldsCollection.value));
+}
+adminTabs.forEach((tab) => tab.addEventListener('click', () => {
+  const activeTab = tab.dataset.adminTab;
+  adminTabs.forEach((item) => { const active = item === tab; item.classList.toggle('is-active', active); item.setAttribute('aria-selected', String(active)); });
+  adminCollections.hidden = activeTab !== 'collections';
+  adminSearch.hidden = activeTab !== 'collections';
+  adminFieldsPanel.hidden = activeTab !== 'fields';
+  adminPluginsPanel.hidden = activeTab !== 'plugins';
+}));
+
 const selectedPage = new URLSearchParams(window.location.search).get('page') || 'home';
 const page = cmsPages[selectedPage] || cmsPages.home;
 const pageFrame = document.querySelector('#cms-page-frame');
@@ -90,6 +160,7 @@ const homePublishButton = document.querySelector('#cms-home-publish');
 const homeMediaDraft = new Map();
 let homePricingDraft = null;
 let homeSettingsDraft = null;
+let legalDraftHtml = null;
 const homePricingOriginalIds = new Set();
 const loadHomePricingIds = async () => {
   if (page.label !== 'Home') return;
@@ -159,11 +230,33 @@ const publishHomeMedia = async () => {
     window.setTimeout(() => { homePublishButton.textContent = 'Publish'; }, 2200);
   }
 };
+const publishLegalPage = async () => {
+  if (!homePublishButton || !legalDraftHtml) return;
+  homePublishButton.disabled = true;
+  homePublishButton.textContent = 'Publishing...';
+  try {
+    const response = await fetch(`${adminSupabaseUrl}/rest/v1/legal_pages?on_conflict=id`, {
+      method: 'POST',
+      headers: { apikey: adminSupabasePublishableKey, Authorization: `Bearer ${adminSupabasePublishableKey}`, 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates,return=minimal' },
+      body: JSON.stringify([{ id: 'global', content_html: legalDraftHtml, status: 'published', published_at: new Date().toISOString() }])
+    });
+    if (!response.ok) throw new Error(await response.text());
+    homePublishButton.textContent = 'Published';
+  } catch (error) {
+    homePublishButton.textContent = 'Publish failed';
+    console.error(error);
+  } finally {
+    homePublishButton.disabled = false;
+    window.setTimeout(() => { homePublishButton.textContent = 'Publish legal page'; }, 2200);
+  }
+};
 window.addEventListener('message', (event) => {
-  if (event.data?.source !== 'projectskevv-cms-home') return;
-  if (event.data.type === 'media-change' && event.data.id && event.data.value) homeMediaDraft.set(event.data.id, event.data.value);
-  if (event.data.type === 'pricing-change' && Array.isArray(event.data.plans)) homePricingDraft = event.data.plans;
-  if (event.data.type === 'settings-change' && event.data.settings) homeSettingsDraft = event.data.settings;
+  if (event.data?.source === 'projectskevv-cms-home') {
+    if (event.data.type === 'media-change' && event.data.id && event.data.value) homeMediaDraft.set(event.data.id, event.data.value);
+    if (event.data.type === 'pricing-change' && Array.isArray(event.data.plans)) homePricingDraft = event.data.plans;
+    if (event.data.type === 'settings-change' && event.data.settings) homeSettingsDraft = event.data.settings;
+  }
+  if (event.data?.source === 'projectskevv-cms-legal' && event.data.type === 'html-change') legalDraftHtml = event.data.html || null;
 });
 
 document.querySelectorAll('[data-cms-page]').forEach((link) => {
@@ -252,7 +345,8 @@ if (page.label === 'Home') {
   editorFrameOverlay.hidden = true;
 }
 
-if (pageFrame) pageFrame.src = page.label === 'Home' ? `${page.source}?cms=1` : page.source;
+if (page.label === 'Legal' && homePublishButton) { homePublishButton.hidden = false; homePublishButton.textContent = 'Publish legal page'; homePublishButton.addEventListener('click', publishLegalPage); }
+if (pageFrame) pageFrame.src = ['Home', 'Legal'].includes(page.label) ? `${page.source}?cms=1` : page.source;
 
 if (page.label === 'Projects') {
   const projectTools = document.querySelector('#cms-project-tools');
