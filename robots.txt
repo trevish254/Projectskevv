@@ -18,4 +18,4 @@ Allow: /
 User-agent: PerplexityBot
 Allow: /
 
-Sitemap: https://projectskevv.com/sitemap.xml
+Sitemap: https://projectskevv.vercel.app/sitemap.xml
