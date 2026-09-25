@@ -716,7 +716,7 @@ if (page.label === 'Journal') {
     }
   journalManager.innerHTML = `
       <div class="cms-project-manager-inner"><div class="cms-project-manager-heading"><div><h2>${draftJournal ? 'Create journal' : 'Edit journal'}</h2><p>Write and format the article content directly in the CMS.</p><button class="cms-project-preview-toggle" type="button" data-journal-preview-toggle>Preview</button></div><p>${journal.status || 'Draft'}</p></div>
-      <div class="cms-journal-auth"><strong>${accessToken ? 'Secure admin session active' : 'Sign in to save changes'}</strong>${accessToken ? '<button type="button" data-journal-sign-out>Sign out</button>' : ''}</div>
+      <div class="cms-journal-auth"><strong>Changes save directly to Supabase</strong></div>
       <form class="cms-project-form" data-journal-form>
         <div class="cms-project-field"><label>Title</label><input data-journal-field="title" required /></div>
         <div class="cms-project-field"><label>Status</label><input data-journal-field="status" /></div>
@@ -754,7 +754,6 @@ if (page.label === 'Journal') {
     journalManager.querySelector('[data-journal-form]').addEventListener('submit', async (event) => {
       event.preventDefault();
       journal.slug = String(journal.slug || journal.title || 'new-journal').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || `journal-${Date.now()}`;
-      if (!accessToken) { showJournalNotice('Sign in before saving.'); return; }
       try {
         if (draftJournal) {
           const created = await journalRequest('journal_posts', { method: 'POST', headers: { Prefer: 'return=representation' }, body: JSON.stringify(toDbJournal(journal)) });
