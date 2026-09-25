@@ -1,3 +1,27 @@
+const initSmoothScroll = () => {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || typeof Lenis === 'undefined') return;
+
+  const lenis = new Lenis({
+    anchors: true,
+    autoRaf: false,
+    duration: 1.15,
+    smoothWheel: true,
+    syncTouch: false,
+    wheelMultiplier: 0.9
+  });
+
+  window.projectskevvLenis = lenis;
+
+  const raf = (time) => {
+    lenis.raf(time);
+    window.requestAnimationFrame(raf);
+  };
+
+  window.requestAnimationFrame(raf);
+};
+
+initSmoothScroll();
+
 if (window.location.protocol === 'file:') {
   const filePath = decodeURIComponent(window.location.pathname).replace(/\\/g, '/');
   const marker = '/Projectskevv/';
@@ -50,9 +74,11 @@ window.projectskevvDb = createSupabaseRestClient({
 });
 
 const isHomepage = Boolean(document.querySelector('.hero-container'));
+let homepagePricingSettings = null;
 const isHomepageLockedMedia = (media) => Boolean(media.closest('.footer-services, [class*="projects"], [class*="services"], [class*="journal"], a[href*="projects"], a[href*="services"], a[href*="journal"]'));
 const homepageMediaKey = (media) => {
   if (!media) return '';
+  if (media.dataset.homeMediaKey) return media.dataset.homeMediaKey;
   if (!media.dataset.homeMediaKey) {
     const editableMedia = [...document.querySelectorAll('main img, main video')].filter((item) => !isHomepageLockedMedia(item));
     media.dataset.homeMediaKey = `home-media-${Math.max(0, editableMedia.indexOf(media)) + 1}`;
@@ -61,20 +87,22 @@ const homepageMediaKey = (media) => {
 };
 const homepageMediaElements = () => [...document.querySelectorAll('main img, main video')].filter((media) => !isHomepageLockedMedia(media));
 const applyHomepageMedia = (key, source) => {
-  const current = homepageMediaElements().find((media) => homepageMediaKey(media) === key);
-  if (!current || !source) return;
+  const matchingMedia = homepageMediaElements().filter((media) => homepageMediaKey(media) === key);
+  if (!matchingMedia.length || !source) return;
   const isVideo = /\.(mp4|webm|ogg|mov|m4v)(?:[?#].*)?$/i.test(source);
-  const currentIsVideo = current.tagName.toLowerCase() === 'video';
-  let media = current;
-  if (isVideo !== currentIsVideo) {
-    media = document.createElement(isVideo ? 'video' : 'img');
-    media.className = current.className;
-    media.alt = current.alt || '';
-    media.dataset.homeMediaKey = key;
-    current.replaceWith(media);
-  }
-  media.src = source;
-  if (isVideo) { media.autoplay = true; media.muted = true; media.loop = true; media.playsInline = true; }
+  matchingMedia.forEach((current) => {
+    const currentIsVideo = current.tagName.toLowerCase() === 'video';
+    let media = current;
+    if (isVideo !== currentIsVideo) {
+      media = document.createElement(isVideo ? 'video' : 'img');
+      media.className = current.className;
+      media.alt = current.alt || '';
+      media.dataset.homeMediaKey = key;
+      current.replaceWith(media);
+    }
+    media.src = source;
+    if (isVideo) { media.autoplay = true; media.muted = true; media.loop = true; media.playsInline = true; }
+  });
 };
 const loadHomepageMedia = async () => {
   if (!isHomepage) return;
@@ -114,7 +142,7 @@ const renderHomepagePricing = (plans) => {
     container.appendChild(card);
   });
   const count = document.querySelector('#pricing .pricing-title-row span');
-  if (count) count.textContent = `(${plans.length})`;
+  if (count) count.textContent = `(${homepagePricingSettings?.item_count ?? plans.length})`;
   document.dispatchEvent(new CustomEvent('projectskevv:pricing-updated'));
 };
 const loadHomepagePricing = async () => {
@@ -125,6 +153,25 @@ const loadHomepagePricing = async () => {
   } catch (error) { console.error(error); }
 };
 loadHomepagePricing();
+
+const applyHomepagePricingSettings = (settings) => {
+  if (!settings) return;
+  homepagePricingSettings = settings;
+  const title = document.querySelector('#pricing .pricing-title-row h2');
+  const description = document.querySelector('#pricing .pricing-header > p');
+  const count = document.querySelector('#pricing .pricing-title-row span');
+  if (title) title.textContent = settings.title || 'PRICING';
+  if (description) description.textContent = settings.description || '';
+  if (count) count.textContent = `(${Number.isInteger(Number(settings.item_count)) ? settings.item_count : 0})`;
+};
+const loadHomepagePricingSettings = async () => {
+  if (!isHomepage) return;
+  try {
+    const rows = await window.projectskevvDb.from('home_pricing_settings').select('id,title,description,item_count,status', 'id=eq.global&status=eq.published');
+    if (rows[0]) applyHomepagePricingSettings(rows[0]);
+  } catch (error) { console.error(error); }
+};
+loadHomepagePricingSettings();
 
 const applyHomepageSettings = (settings) => {
   const logoText = String(settings?.logo_text || '').trim() || 'Projectskevv';
@@ -1112,6 +1159,7 @@ if (cmsPreview) {
       cmsActiveMedia.replaceWith(replacement);
       cmsActiveMedia = replacement;
     }
+    if (homeMediaId) applyHomepageMedia(homeMediaId, source);
     cmsActiveMedia.src = source;
     if (sourceIsVideo) {
       cmsActiveMedia.controls = true;
@@ -1393,7 +1441,10 @@ if (cmsPreview) {
   cmsPricingEditor.hidden = true;
   cmsPricingEditor.innerHTML = `
     <div class="cms-pricing-editor-header"><strong>Pricing content</strong><button type="button" data-cms-pricing-close aria-label="Close pricing editor">×</button></div>
-    <p>Add, edit, or remove the feature content inside each pricing plan.</p>
+    <p>Edit the pricing section and its cards, then use Publish to save everything.</p>
+    <label>Section title<input type="text" data-cms-pricing-title /></label>
+    <label>Section description<textarea data-cms-pricing-description rows="3"></textarea></label>
+    <label>Displayed count<input type="number" min="0" step="1" data-cms-pricing-count /></label>
     <select data-cms-pricing-plan aria-label="Choose pricing plan"></select>
     <div class="cms-pricing-feature-list" data-cms-pricing-features></div>
     <button class="cms-pricing-add" type="button" data-cms-pricing-add>+ Add mock feature</button>
@@ -1403,6 +1454,9 @@ if (cmsPreview) {
   document.body.appendChild(cmsPricingEditor);
 
   const cmsPricingPlan = cmsPricingEditor.querySelector('[data-cms-pricing-plan]');
+  const cmsPricingTitle = cmsPricingEditor.querySelector('[data-cms-pricing-title]');
+  const cmsPricingDescription = cmsPricingEditor.querySelector('[data-cms-pricing-description]');
+  const cmsPricingCount = cmsPricingEditor.querySelector('[data-cms-pricing-count]');
   const cmsPricingFeatures = cmsPricingEditor.querySelector('[data-cms-pricing-features]');
   const cmsPricingAdd = cmsPricingEditor.querySelector('[data-cms-pricing-add]');
   const cmsPricingAddCard = cmsPricingEditor.querySelector('[data-cms-pricing-add-card]');
@@ -1432,9 +1486,14 @@ if (cmsPreview) {
     sort_order: index,
     status: 'published'
   }));
+  const cmsPricingSettingsData = () => ({
+    title: document.querySelector('#pricing .pricing-title-row h2')?.textContent.trim() || 'PRICING',
+    description: document.querySelector('#pricing .pricing-header > p')?.textContent.trim() || '',
+    item_count: Math.max(0, Number.parseInt(document.querySelector('#pricing .pricing-title-row span')?.textContent.replace(/[^0-9]/g, '') || String(cmsPricingCards.length), 10) || 0)
+  });
   const postCmsPricingDraft = () => {
     ensureCmsPricingIds();
-    if (window.parent !== window) window.parent.postMessage({ source: 'projectskevv-cms-home', type: 'pricing-change', plans: cmsPricingPlanData() }, '*');
+    if (window.parent !== window) window.parent.postMessage({ source: 'projectskevv-cms-home', type: 'pricing-change', plans: cmsPricingPlanData(), settings: cmsPricingSettingsData() }, '*');
   };
   ensureCmsPricingIds();
   document.addEventListener('projectskevv:pricing-updated', () => {
@@ -1466,6 +1525,9 @@ if (cmsPreview) {
   };
 
   const renderCmsPricingPlans = () => {
+    cmsPricingTitle.value = document.querySelector('#pricing .pricing-title-row h2')?.textContent.trim() || 'PRICING';
+    cmsPricingDescription.value = document.querySelector('#pricing .pricing-header > p')?.textContent.trim() || '';
+    cmsPricingCount.value = document.querySelector('#pricing .pricing-title-row span')?.textContent.replace(/[^0-9]/g, '') || String(cmsPricingCards.length);
     cmsPricingPlan.innerHTML = '';
     cmsPricingCards.forEach((card, index) => {
       const option = document.createElement('option');
@@ -1496,6 +1558,23 @@ if (cmsPreview) {
     cmsPricingEditor.style.bottom = 'auto';
   };
   const closeCmsPricingEditor = () => { cmsPricingEditor.hidden = true; };
+  cmsPricingTitle.addEventListener('input', () => {
+    const title = document.querySelector('#pricing .pricing-title-row h2');
+    if (title) title.textContent = cmsPricingTitle.value;
+    postCmsPricingDraft();
+  });
+  cmsPricingDescription.addEventListener('input', () => {
+    const description = document.querySelector('#pricing .pricing-header > p');
+    if (description) description.textContent = cmsPricingDescription.value;
+    postCmsPricingDraft();
+  });
+  cmsPricingCount.addEventListener('input', () => {
+    const count = document.querySelector('#pricing .pricing-title-row span');
+    const value = Math.max(0, Number.parseInt(cmsPricingCount.value || '0', 10) || 0);
+    cmsPricingCount.value = String(value);
+    if (count) count.textContent = `(${value})`;
+    postCmsPricingDraft();
+  });
   cmsPricingPlan.addEventListener('change', () => {
     cmsPricingActiveIndex = Number(cmsPricingPlan.value);
     renderCmsPricingFeatures();

@@ -10,9 +10,6 @@ const adminAuthFetch = (url, options = {}) => {
   const timeout = window.setTimeout(() => controller.abort(), 12000);
   return fetch(url, { ...options, signal: controller.signal }).finally(() => window.clearTimeout(timeout));
 };
-const adminAuthReady = Promise.resolve(true);
-window.projectskevvAdminAuthReady = adminAuthReady;
-if (false) {
 document.body.classList.add('admin-auth-pending');
 const adminAuthGate = document.createElement('div');
 adminAuthGate.className = 'admin-auth-gate';
@@ -22,7 +19,7 @@ document.body.appendChild(adminAuthGate);
 const adminAuthMessage = adminAuthGate.querySelector('[data-admin-auth-message]');
 if (window.location.protocol === 'file:') {
   adminAuthGate.querySelector('.admin-auth-card p').textContent = 'Open the CMS through a local web server before signing in. Supabase blocks Auth requests from file:// pages.';
-  adminAuthMessage.textContent = 'Redirecting to the local web serverâ€¦';
+  adminAuthMessage.textContent = 'Redirecting to the local web server…';
   window.setTimeout(() => { window.location.replace(`http://127.0.0.1:4173/admin/index.html${window.location.search}`); }, 250);
 }
 const adminAuthReady = new Promise((resolve) => {
@@ -44,7 +41,7 @@ const adminAuthReady = new Promise((resolve) => {
     const password = form.querySelector('#admin-auth-password').value;
     adminAuthMessage.textContent = '';
     submitButton.disabled = true;
-    submitButton.textContent = 'Signing inâ€¦';
+    submitButton.textContent = 'Signing in…';
     try {
       const response = await adminAuthFetch(adminAuthLoginUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify({ email, password }) });
       if (!response.ok) throw new Error(await readSupabaseError(response));
@@ -58,7 +55,7 @@ const adminAuthReady = new Promise((resolve) => {
     const email = adminAuthGate.querySelector('#admin-auth-email').value.trim();
     adminAuthMessage.textContent = '';
     button.disabled = true;
-    button.textContent = 'Checking keyâ€¦';
+    button.textContent = 'Checking key…';
     try {
       const response = await adminAuthFetch('/api/auth/emergency', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify({ email, token }) });
       if (!response.ok) throw new Error(await readSupabaseError(response));
@@ -68,85 +65,14 @@ const adminAuthReady = new Promise((resolve) => {
   });
 });
 window.projectskevvAdminAuthReady = adminAuthReady;
-}
 
 const cmsPages = {
-  home: { label: 'Home', source: '../' },
-  services: { label: 'Services', source: '../services/' },
-  projects: { label: 'Projects', source: '../projects/' },
-  journal: { label: 'Journal', source: '../journal/' },
+  home: { label: 'Home', source: '../index.html' },
+  services: { label: 'Services', source: '../services/index.html' },
+  projects: { label: 'Projects', source: '../projects/index.html' },
+  journal: { label: 'Journal', source: '../journal/index.html' },
   legal: { label: 'Legal', source: '../contact/index.html' }
 };
-
-const adminShell = document.querySelector('.admin-shell');
-const adminSidebarToggle = document.querySelector('.admin-sidebar-toggle');
-if (adminShell && adminSidebarToggle) {
-  const setSidebarCollapsed = (collapsed) => {
-    adminShell.classList.toggle('is-sidebar-collapsed', collapsed);
-    adminSidebarToggle.setAttribute('aria-expanded', String(!collapsed));
-    adminSidebarToggle.setAttribute('aria-label', collapsed ? 'Expand admin sidebar' : 'Collapse admin sidebar');
-    adminSidebarToggle.title = collapsed ? 'Expand sidebar' : 'Collapse sidebar';
-    try { window.localStorage.setItem('projectskevv-admin-sidebar-collapsed', String(collapsed)); } catch {}
-  };
-  let initiallyCollapsed = false;
-  try { initiallyCollapsed = window.localStorage.getItem('projectskevv-admin-sidebar-collapsed') === 'true'; } catch {}
-  setSidebarCollapsed(initiallyCollapsed);
-  adminSidebarToggle.addEventListener('click', () => setSidebarCollapsed(!adminShell.classList.contains('is-sidebar-collapsed')));
-}
-
-const adminFieldSchemas = {
-  home: {
-    label: 'Home',
-    groups: [
-      { label: 'Brand settings · home_settings', fields: [['Logo text', 'text'], ['Social links', 'array'], ['Status', 'status'], ['Published at', 'date']] },
-      { label: 'Media · home_media', fields: [['Media URL', 'media'], ['Status', 'status'], ['Published at', 'date']] },
-      { label: 'Pricing · home_pricing', fields: [['Title', 'text'], ['Eyebrow', 'text'], ['Description', 'long-text'], ['Price', 'text'], ['Price unit', 'text'], ['Features', 'array'], ['CTA label', 'text'], ['Popular', 'boolean'], ['Sort order', 'number'], ['Status', 'status']] }
-    ]
-  },
-  services: {
-    label: 'Services',
-    groups: [{ label: 'service_posts', fields: [['Title', 'text'], ['Slug', 'text'], ['Status', 'status'], ['Description', 'long-text'], ['Scope', 'text'], ['Timeline', 'text'], ['Image', 'media'], ['Application title', 'text'], ['Application description', 'long-text'], ['Application visuals', 'array'], ['Feature title', 'text'], ['Feature text', 'long-text'], ['Feature image', 'media'], ['Website image', 'media'], ['Published at', 'date']] }]
-  },
-  projects: {
-    label: 'Projects',
-    groups: [{ label: 'project_posts', fields: [['Status', 'status'], ['Slug', 'text'], ['Description', 'long-text'], ['Body text', 'long-text'], ['Cover image URL', 'media'], ['Tag', 'text'], ['Duration', 'text'], ['Client', 'text'], ['Website URL', 'link'], ['Gallery URLs', 'array'], ['Video URL', 'media'], ['Video poster URL', 'media'], ['Published at', 'date']] }]
-  },
-  journal: {
-    label: 'Journal',
-    groups: [{ label: 'journal_posts', fields: [['Title', 'text'], ['Slug', 'text'], ['Status', 'status'], ['Description', 'long-text'], ['Content HTML', 'long-text'], ['Cover image URL', 'media'], ['Tag', 'text'], ['Minutes read', 'number'], ['Author name', 'text'], ['Author role', 'text'], ['Author image URL', 'media'], ['Published at', 'date']] }]
-  },
-  legal: {
-    label: 'Legal',
-    groups: [{ label: 'Static contact/legal content', fields: [['Contact details', 'text'], ['Privacy policy', 'long-text'], ['Terms of use', 'long-text']] }]
-  }
-};
-
-const adminTabs = [...document.querySelectorAll('[data-admin-tab]')];
-const adminCollections = document.querySelector('.admin-collections');
-const adminSearch = document.querySelector('.admin-search');
-const adminFieldsPanel = document.querySelector('[data-admin-fields-panel]');
-const adminPluginsPanel = document.querySelector('[data-admin-plugins-panel]');
-const adminFieldsCollection = document.querySelector('[data-admin-fields-collection]');
-const adminFieldsList = document.querySelector('[data-admin-fields-list]');
-const fieldIcon = { text: 'T', 'long-text': '≡', media: '▧', link: '↗', array: '⋮', status: '◌', date: '◷', number: '#' , boolean: '◉' };
-const renderAdminFields = (collection = 'projects') => {
-  const schema = adminFieldSchemas[collection] || adminFieldSchemas.projects;
-  adminFieldsList.innerHTML = schema.groups.map((group) => `<div class="admin-field-group-label">${group.label}</div>${group.fields.map(([name, type]) => `<div class="admin-field-row"><span class="admin-field-icon" aria-hidden="true">${fieldIcon[type] || 'T'}</span><span class="admin-field-name">${name}</span></div>`).join('')}`).join('');
-};
-if (adminFieldsCollection && adminFieldsList) {
-  Object.entries(adminFieldSchemas).forEach(([key, schema]) => { const option = document.createElement('option'); option.value = key; option.textContent = schema.label; adminFieldsCollection.appendChild(option); });
-  adminFieldsCollection.value = new URLSearchParams(window.location.search).get('page') || 'projects';
-  renderAdminFields(adminFieldsCollection.value);
-  adminFieldsCollection.addEventListener('change', () => renderAdminFields(adminFieldsCollection.value));
-}
-adminTabs.forEach((tab) => tab.addEventListener('click', () => {
-  const activeTab = tab.dataset.adminTab;
-  adminTabs.forEach((item) => { const active = item === tab; item.classList.toggle('is-active', active); item.setAttribute('aria-selected', String(active)); });
-  adminCollections.hidden = activeTab !== 'collections';
-  adminSearch.hidden = activeTab !== 'collections';
-  adminFieldsPanel.hidden = activeTab !== 'fields';
-  adminPluginsPanel.hidden = activeTab !== 'plugins';
-}));
 
 const selectedPage = new URLSearchParams(window.location.search).get('page') || 'home';
 const page = cmsPages[selectedPage] || cmsPages.home;
@@ -159,9 +85,9 @@ const editorFrameOverlay = document.querySelector('#cms-editor-frame-overlay');
 const homePublishButton = document.querySelector('#cms-home-publish');
 const homeMediaDraft = new Map();
 let homePricingDraft = null;
-let homeSettingsDraft = null;
-let legalDraftHtml = null;
+let homePricingSettingsDraft = null;
 const homePricingOriginalIds = new Set();
+
 const loadHomePricingIds = async () => {
   if (page.label !== 'Home') return;
   try {
@@ -170,21 +96,22 @@ const loadHomePricingIds = async () => {
     (await response.json()).forEach((row) => homePricingOriginalIds.add(row.id));
   } catch (error) { console.error(error); }
 };
+
 const publishHomeMedia = async () => {
   if (!homePublishButton) return;
   const rows = [...homeMediaDraft.entries()]
     .filter(([, mediaUrl]) => /^https?:\/\//i.test(mediaUrl))
     .map(([id, mediaUrl]) => ({ id, media_url: mediaUrl, status: 'published', published_at: new Date().toISOString() }));
   const hasPricingDraft = Array.isArray(homePricingDraft);
-  const hasSettingsDraft = Boolean(homeSettingsDraft && typeof homeSettingsDraft === 'object');
+  const hasPricingSettingsDraft = Boolean(homePricingSettingsDraft && typeof homePricingSettingsDraft === 'object');
   const pricingRows = hasPricingDraft ? homePricingDraft.map((plan, index) => ({ ...plan, sort_order: index, status: 'published', published_at: new Date().toISOString() })) : [];
-  if (!rows.length && !hasPricingDraft && !hasSettingsDraft) {
+  if (!rows.length && !hasPricingDraft && !hasPricingSettingsDraft) {
     homePublishButton.textContent = 'Change content first';
     window.setTimeout(() => { homePublishButton.textContent = 'Publish'; }, 1800);
     return;
   }
   homePublishButton.disabled = true;
-  homePublishButton.textContent = 'Publishing…';
+  homePublishButton.textContent = 'Publishing...';
   try {
     if (rows.length) {
       const response = await fetch(`${adminSupabaseUrl}/rest/v1/home_media?on_conflict=id`, {
@@ -205,22 +132,33 @@ const publishHomeMedia = async () => {
       }
       const keptIds = new Set(pricingRows.map((plan) => plan.id));
       for (const id of homePricingOriginalIds) {
-        if (!keptIds.has(id)) {
-          const response = await fetch(`${adminSupabaseUrl}/rest/v1/home_pricing?id=eq.${encodeURIComponent(id)}`, { method: 'DELETE', headers: { apikey: adminSupabasePublishableKey, Authorization: `Bearer ${adminSupabasePublishableKey}` } });
-          if (!response.ok) throw new Error(await response.text());
-        }
+        if (keptIds.has(id)) continue;
+        const response = await fetch(`${adminSupabaseUrl}/rest/v1/home_pricing?id=eq.${encodeURIComponent(id)}`, {
+          method: 'DELETE',
+          headers: { apikey: adminSupabasePublishableKey, Authorization: `Bearer ${adminSupabasePublishableKey}` }
+        });
+        if (!response.ok) throw new Error(await response.text());
       }
-      homePricingOriginalIds.clear();
-      pricingRows.forEach((plan) => homePricingOriginalIds.add(plan.id));
     }
-    if (hasSettingsDraft) {
-      const response = await fetch(`${adminSupabaseUrl}/rest/v1/home_settings?on_conflict=id`, {
+    if (hasPricingSettingsDraft) {
+      const settings = {
+        id: 'global',
+        title: String(homePricingSettingsDraft.title || 'PRICING').trim(),
+        description: String(homePricingSettingsDraft.description || '').trim(),
+        item_count: Math.max(0, Number.parseInt(homePricingSettingsDraft.item_count, 10) || 0),
+        status: 'published',
+        published_at: new Date().toISOString()
+      };
+      const response = await fetch(`${adminSupabaseUrl}/rest/v1/home_pricing_settings?on_conflict=id`, {
         method: 'POST',
         headers: { apikey: adminSupabasePublishableKey, Authorization: `Bearer ${adminSupabasePublishableKey}`, 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates,return=minimal' },
-        body: JSON.stringify([{ id: 'global', logo_text: homeSettingsDraft.logo_text || 'Projectskevv', social_links: Array.isArray(homeSettingsDraft.social_links) ? homeSettingsDraft.social_links : [], status: 'published', published_at: new Date().toISOString() }])
+        body: JSON.stringify([settings])
       });
       if (!response.ok) throw new Error(await response.text());
     }
+    homePricingDraft = null;
+    homePricingSettingsDraft = null;
+    homeMediaDraft.clear();
     homePublishButton.textContent = 'Published';
   } catch (error) {
     homePublishButton.textContent = 'Publish failed';
@@ -230,33 +168,14 @@ const publishHomeMedia = async () => {
     window.setTimeout(() => { homePublishButton.textContent = 'Publish'; }, 2200);
   }
 };
-const publishLegalPage = async () => {
-  if (!homePublishButton || !legalDraftHtml) return;
-  homePublishButton.disabled = true;
-  homePublishButton.textContent = 'Publishing...';
-  try {
-    const response = await fetch(`${adminSupabaseUrl}/rest/v1/legal_pages?on_conflict=id`, {
-      method: 'POST',
-      headers: { apikey: adminSupabasePublishableKey, Authorization: `Bearer ${adminSupabasePublishableKey}`, 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates,return=minimal' },
-      body: JSON.stringify([{ id: 'global', content_html: legalDraftHtml, status: 'published', published_at: new Date().toISOString() }])
-    });
-    if (!response.ok) throw new Error(await response.text());
-    homePublishButton.textContent = 'Published';
-  } catch (error) {
-    homePublishButton.textContent = 'Publish failed';
-    console.error(error);
-  } finally {
-    homePublishButton.disabled = false;
-    window.setTimeout(() => { homePublishButton.textContent = 'Publish legal page'; }, 2200);
-  }
-};
+
 window.addEventListener('message', (event) => {
-  if (event.data?.source === 'projectskevv-cms-home') {
-    if (event.data.type === 'media-change' && event.data.id && event.data.value) homeMediaDraft.set(event.data.id, event.data.value);
-    if (event.data.type === 'pricing-change' && Array.isArray(event.data.plans)) homePricingDraft = event.data.plans;
-    if (event.data.type === 'settings-change' && event.data.settings) homeSettingsDraft = event.data.settings;
+  if (event.source !== pageFrame?.contentWindow || event.data?.source !== 'projectskevv-cms-home') return;
+  if (event.data.type === 'media-change' && event.data.id && event.data.value) homeMediaDraft.set(event.data.id, event.data.value);
+  if (event.data.type === 'pricing-change') {
+    if (Array.isArray(event.data.plans)) homePricingDraft = event.data.plans;
+    if (event.data.settings) homePricingSettingsDraft = event.data.settings;
   }
-  if (event.data?.source === 'projectskevv-cms-legal' && event.data.type === 'html-change') legalDraftHtml = event.data.html || null;
 });
 
 document.querySelectorAll('[data-cms-page]').forEach((link) => {
@@ -265,7 +184,7 @@ document.querySelectorAll('[data-cms-page]').forEach((link) => {
   if (isActive) link.setAttribute('aria-current', 'page');
   link.href = window.location.protocol === 'file:'
     ? `./index.html?page=${link.dataset.cmsPage}`
-    : `/admin/?page=${link.dataset.cmsPage}`;
+    : `/admin/index.html?page=${link.dataset.cmsPage}`;
 });
 
 if (pageTitle) pageTitle.textContent = page.label;
@@ -345,8 +264,7 @@ if (page.label === 'Home') {
   editorFrameOverlay.hidden = true;
 }
 
-if (page.label === 'Legal' && homePublishButton) { homePublishButton.hidden = false; homePublishButton.textContent = 'Publish legal page'; homePublishButton.addEventListener('click', publishLegalPage); }
-if (pageFrame) pageFrame.src = ['Home', 'Legal'].includes(page.label) ? `${page.source}?cms=1` : page.source;
+if (pageFrame) pageFrame.src = page.label === 'Home' ? `${page.source}?cms=1` : page.source;
 
 if (page.label === 'Projects') {
   const projectTools = document.querySelector('#cms-project-tools');
@@ -376,8 +294,9 @@ if (page.label === 'Projects') {
     videoPoster: '',
     videoFile: ''
   }];
-  const projectColumns = 'id,title,slug,status,description,body_text,cover_image_url,tag,duration,client,website_url,gallery_urls,video_url,video_poster_url,published_at,created_at,updated_at';
-  let projects = [...seedProjects];
+  let storedProjects = [];
+  try { storedProjects = JSON.parse(localStorage.getItem(projectsStorageKey) || '[]'); } catch { storedProjects = []; }
+  const projects = storedProjects.length ? storedProjects : seedProjects;
   let activeProjectId = projects[0]?.id || null;
   let draftProject = null;
   let projectPreviewMode = false;
@@ -386,52 +305,6 @@ if (page.label === 'Projects') {
   const saveProjects = () => {
     try { localStorage.setItem(projectsStorageKey, JSON.stringify(projects)); } catch { /* local preview storage may be unavailable */ }
   };
-
-  const projectRequest = async (options = {}) => {
-    const response = await fetch(`${adminSupabaseUrl}/rest/v1/project_posts`, {
-      ...options,
-      headers: {
-        apikey: adminSupabasePublishableKey,
-        Authorization: `Bearer ${adminSupabasePublishableKey}`,
-        Accept: 'application/json',
-        ...(options.body ? { 'Content-Type': 'application/json' } : {}),
-        ...(options.headers || {})
-      }
-    });
-    if (!response.ok) throw new Error(`Supabase project request failed (${response.status}): ${await response.text()}`);
-    return response.status === 204 ? null : response.json();
-  };
-  const fromDbProject = (row) => ({
-    id: row.id, title: row.title || '', status: row.status === 'published' ? 'Live' : row.status === 'archived' ? 'Archived' : 'Draft',
-    slug: row.slug || '', description: row.description || '', text: row.body_text || '', image: row.cover_image_url || '', tag: row.tag || '',
-    duration: row.duration || '', client: row.client || '', website: row.website_url || '', gallery: Array.isArray(row.gallery_urls) ? row.gallery_urls : [],
-    useVideo: Boolean(row.video_url), videoPoster: row.video_poster_url || '', videoFile: row.video_url || '',
-    publishedAt: row.published_at, createdAt: row.created_at, updatedAt: row.updated_at
-  });
-  const projectStatus = (status) => String(status || '').toLowerCase() === 'live' ? 'published' : String(status || '').toLowerCase() === 'archived' ? 'archived' : 'draft';
-  const toDbProject = (project) => ({
-    id: project.id || project.slug, title: project.title || 'Untitled project', slug: project.slug, status: projectStatus(project.status),
-    description: project.description || '', body_text: project.text || '', cover_image_url: project.image || null, tag: project.tag || '',
-    duration: project.duration || '', client: project.client || '', website_url: project.website || null, gallery_urls: project.gallery || [],
-    video_url: project.videoFile || null, video_poster_url: project.videoPoster || null,
-    published_at: projectStatus(project.status) === 'published' ? (project.publishedAt || new Date().toISOString()) : null
-  });
-  const loadProjects = async () => {
-    try {
-      const rows = await projectRequest({ method: 'GET', headers: { Prefer: 'return=representation' }, });
-      projects = rows.map(fromDbProject);
-      activeProjectId = projects[0]?.id || null;
-      renderProjectOptions();
-      renderProjectForm();
-    } catch (error) {
-      console.error(error);
-    }
-  };
-  const saveProjectToDatabase = (project) => projectRequest({
-    method: 'POST',
-    headers: { Prefer: 'resolution=merge-duplicates,return=representation' },
-    body: JSON.stringify(toDbProject(project))
-  });
 
   const projectValue = (project, field) => field === 'gallery' ? (project.gallery || []).join('\n') : (project[field] ?? '');
 
@@ -510,8 +383,6 @@ if (page.label === 'Projects') {
     }
     if (gallery) {
       gallery.innerHTML = '';
-      const columns = [previewDocument.createElement('div'), previewDocument.createElement('div')];
-      columns.forEach((column) => { column.className = 'gallery-column'; gallery.appendChild(column); });
       (project.gallery || []).forEach((source, index) => {
         const figure = previewDocument.createElement('figure');
         figure.className = `gallery-item ${index === 0 ? 'gallery-item-large' : 'gallery-item-medium'}`;
@@ -524,7 +395,7 @@ if (page.label === 'Projects') {
         image.classList.add('cms-editor-target');
         image.dataset.editorLabel = 'Image';
         figure.appendChild(image);
-        columns[index % 2].appendChild(figure);
+        gallery.appendChild(figure);
       });
     }
   };
@@ -538,7 +409,7 @@ if (page.label === 'Projects') {
         <div class="cms-project-manager-content">
         <form class="cms-project-form" data-project-form>
           <div class="cms-project-field"><label for="project-title">Title</label><input id="project-title" data-field="title" value="" required /></div>
-          <div class="cms-project-field"><label for="project-status">Status</label><select id="project-status" data-field="status"><option value="Draft">Draft</option><option value="Live">Live</option><option value="Archived">Archived</option></select><p class="cms-project-hint">Only Live projects appear on the public Projects page.</p></div>
+          <div class="cms-project-field"><label for="project-status">Status</label><input id="project-status" data-field="status" value="" /></div>
           <div class="cms-project-field"><label for="project-slug">Slug</label><input id="project-slug" data-field="slug" value="" required /></div>
           <div class="cms-project-field"><label for="project-description">Description</label><textarea id="project-description" data-field="description"></textarea></div>
           <div class="cms-project-field"><label for="project-text">Text</label><textarea id="project-text" data-field="text"></textarea></div>
@@ -551,7 +422,7 @@ if (page.label === 'Projects') {
           <div class="cms-project-field"><label for="project-use-video">Video</label><div><label><input id="project-use-video" type="checkbox" data-field="useVideo" /> Use video as cover</label><input id="project-video-poster" type="url" data-field="videoPoster" placeholder="Video poster URL" style="margin-top:8px" /><input id="project-video-file" type="url" data-field="videoFile" placeholder="Video file URL" style="margin-top:8px" /></div></div>
           <div class="cms-project-form-actions"><span class="cms-project-notice">${notice}</span><button class="cms-project-cancel" type="button" data-project-cancel>Cancel</button><button class="cms-project-save" type="submit">Save project</button></div>
         </form>
-        <div class="cms-project-live-preview" data-project-live-preview><iframe data-live-project-frame title="Exact project page preview" src="../projects/beach-shoot/?cms=1&projectEditor=1"></iframe></div>
+        <div class="cms-project-live-preview" data-project-live-preview><iframe data-live-project-frame title="Exact project page preview" src="../projects/beach-shoot/index.html?cms=1&projectEditor=1"></iframe></div>
         </div>
       </div>
     `;
@@ -622,17 +493,7 @@ if (page.label === 'Projects') {
       saveProjects();
       projectPreviewMode = true;
       renderProjectOptions();
-      saveProjectToDatabase(project)
-        .then((rows) => {
-          const saved = Array.isArray(rows) && rows[0] ? fromDbProject(rows[0]) : project;
-          const existingIndex = projects.findIndex((item) => item.id === saved.id);
-          if (existingIndex >= 0) projects.splice(existingIndex, 1, saved);
-          else projects.unshift(saved);
-          activeProjectId = saved.id;
-          renderProjectOptions();
-          renderProjectForm('Saved to Supabase');
-        })
-        .catch((error) => renderProjectForm(`Saved locally; database failed: ${error.message}`));
+      renderProjectForm('Saved locally');
     });
   };
 
@@ -643,8 +504,8 @@ if (page.label === 'Projects') {
     projectFrame.hidden = true;
     if (editorFrameOverlay) editorFrameOverlay.hidden = true;
     if (editingStatus) editingStatus.hidden = true;
-    if (publicLink) publicLink.href = '../projects/';
-    if (projectsPageLink) projectsPageLink.textContent = 'View Projects page â†—';
+    if (publicLink) publicLink.href = '../projects/index.html';
+    if (projectsPageLink) projectsPageLink.textContent = 'View Projects page ↗';
     renderProjectOptions();
     renderProjectForm();
   };
@@ -653,7 +514,7 @@ if (page.label === 'Projects') {
     projectListingMode = false;
     projectManager.hidden = false;
     projectFrame.hidden = true;
-    if (projectsPageLink) projectsPageLink.textContent = 'View Projects page â†—';
+    if (projectsPageLink) projectsPageLink.textContent = 'View Projects page ↗';
     draftProject = null;
     projectPreviewMode = false;
     activeProjectId = projectSelect.value;
@@ -661,7 +522,7 @@ if (page.label === 'Projects') {
   });
   newProjectButton.addEventListener('click', () => {
     projectListingMode = false;
-    if (projectsPageLink) projectsPageLink.textContent = 'View Projects page â†—';
+    if (projectsPageLink) projectsPageLink.textContent = 'View Projects page ↗';
     projectPreviewMode = false;
     projectTools.hidden = false;
     projectManager.hidden = false;
@@ -676,12 +537,12 @@ if (page.label === 'Projects') {
     if (projectListingMode) {
       projectManager.hidden = true;
       projectFrame.hidden = false;
-      projectFrame.src = '../projects/?cms=1&lockedMedia=1';
+      projectFrame.src = '../projects/index.html?cms=1&lockedMedia=1';
       projectsPageLink.textContent = 'Back to editor';
     } else {
       projectFrame.hidden = true;
       projectManager.hidden = false;
-      projectsPageLink.textContent = 'View Projects page â†—';
+      projectsPageLink.textContent = 'View Projects page ↗';
     }
   });
 
@@ -712,7 +573,6 @@ if (page.label === 'Projects') {
     }
   });
   openProjectManager();
-  loadProjects();
 }
 
 if (page.label === 'Services') {
@@ -726,7 +586,7 @@ if (page.label === 'Services') {
   const seedServices = [{
     id: 'branding', title: 'Branding', status: 'Live', slug: 'branding',
     description: 'Distinctive identities built to make your brand clearer, more memorable, and ready to grow.',
-    scope: 'Brand identity', timeline: '2â€“4 weeks', image: 'https://framerusercontent.com/images/8nrq8L6qbVPhVhBA9TMoevGLql4.webp',
+    scope: 'Brand identity', timeline: '2–4 weeks', image: 'https://framerusercontent.com/images/8nrq8L6qbVPhVhBA9TMoevGLql4.webp',
     applicationTitle: 'BRAND APPLICATION', applicationDescription: 'Translating your core values into tangible brand applications for print and digital channels.',
     applicationVisuals: ['https://framerusercontent.com/images/8nrq8L6qbVPhVhBA9TMoevGLql4.webp', 'https://framerusercontent.com/images/daFBEqvccTmPwLaEvq3zBCJm8PU.png', 'https://framerusercontent.com/images/75Ki88np43SW5rT6tbMlWFiQ.png'],
     detail1Title: 'LOGO SYSTEM & USAGE', detail1Description: 'Logo system is core values into tangible brand applications for print and digital channels.', detail1Image: 'https://framerusercontent.com/images/3reGuWpWiARbmfYlToDFtUzhTc.png',
@@ -739,50 +599,10 @@ if (page.label === 'Services') {
   const services = storedServices.length ? storedServices : seedServices;
   let activeServiceId = services[0]?.id || null;
   let draftService = null;
-  const serviceColumns = 'id,title,slug,status,description,scope,timeline,image,application_title,application_description,application_visuals,detail1_title,detail1_description,detail1_image,detail2_title,detail2_description,detail2_image,detail3_title,detail3_description,detail3_image,feature_title,feature_text,feature_image,website_image,published_at,created_at,updated_at';
-  const serviceRequest = async (options = {}) => {
-    const response = await fetch(`${adminSupabaseUrl}/rest/v1/service_posts`, {
-      ...options,
-      headers: { apikey: adminSupabasePublishableKey, Authorization: `Bearer ${adminSupabasePublishableKey}`, Accept: 'application/json', ...(options.body ? { 'Content-Type': 'application/json' } : {}), ...(options.headers || {}) }
-    });
-    if (!response.ok) throw new Error(`Supabase service request failed (${response.status}): ${await response.text()}`);
-    return response.status === 204 ? null : response.json();
-  };
-  const fromDbService = (row) => ({
-    id: row.id, title: row.title || '', status: row.status === 'published' ? 'Live' : row.status === 'archived' ? 'Archived' : 'Draft', slug: row.slug || '',
-    description: row.description || '', scope: row.scope || '', timeline: row.timeline || '', image: row.image || '', applicationTitle: row.application_title || '', applicationDescription: row.application_description || '', applicationVisuals: Array.isArray(row.application_visuals) ? row.application_visuals : [],
-    detail1Title: row.detail1_title || '', detail1Description: row.detail1_description || '', detail1Image: row.detail1_image || '', detail2Title: row.detail2_title || '', detail2Description: row.detail2_description || '', detail2Image: row.detail2_image || '', detail3Title: row.detail3_title || '', detail3Description: row.detail3_description || '', detail3Image: row.detail3_image || '', featureTitle: row.feature_title || '', featureText: row.feature_text || '', featureImage: row.feature_image || '', websiteImage: row.website_image || '', publishedAt: row.published_at
-  });
-  const serviceStatus = (status) => String(status || '').toLowerCase() === 'live' ? 'published' : String(status || '').toLowerCase() === 'archived' ? 'archived' : 'draft';
-  const toDbService = (service) => ({
-    id: service.id || service.slug, title: service.title || 'Untitled service', slug: service.slug, status: serviceStatus(service.status), description: service.description || '', scope: service.scope || '', timeline: service.timeline || '', image: service.image || null,
-    application_title: service.applicationTitle || '', application_description: service.applicationDescription || '', application_visuals: service.applicationVisuals || [], detail1_title: service.detail1Title || '', detail1_description: service.detail1Description || '', detail1_image: service.detail1Image || null, detail2_title: service.detail2Title || '', detail2_description: service.detail2Description || '', detail2_image: service.detail2Image || null, detail3_title: service.detail3Title || '', detail3_description: service.detail3Description || '', detail3_image: service.detail3Image || null, feature_title: service.featureTitle || '', feature_text: service.featureText || '', feature_image: service.featureImage || null, website_image: service.websiteImage || null, published_at: serviceStatus(service.status) === 'published' ? (service.publishedAt || new Date().toISOString()) : null
-  });
-  const loadServices = async () => {
-    const rows = await serviceRequest({ method: 'GET', headers: { Prefer: 'return=representation' } });
-    services.splice(0, services.length, ...rows.map(fromDbService));
-    activeServiceId = services[0]?.id || null;
-    renderServiceOptions();
-    renderServiceForm();
-  };
-  const saveServiceToDatabase = (service) => serviceRequest({ method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=representation' }, body: JSON.stringify(toDbService(service)) });
 
   const currentService = () => draftService || services.find((service) => service.id === activeServiceId) || services[0];
   const saveServices = () => { try { localStorage.setItem(servicesStorageKey, JSON.stringify(services)); } catch { /* local preview storage may be unavailable */ } };
   const serviceValue = (service, field) => field === 'applicationVisuals' ? (service.applicationVisuals || []).join('\n') : (service[field] ?? '');
-  const renderServiceMediaPreview = (container, source, label = 'Media preview') => {
-    if (!container) return;
-    container.innerHTML = '';
-    const sources = Array.isArray(source) ? source : String(source || '').split(/\r?\n/).map((item) => item.trim()).filter(Boolean);
-    if (!sources.length) { container.innerHTML = '<span>No media yet</span>'; return; }
-    sources.forEach((url) => {
-      const isVideo = /\.(mp4|webm|ogg|mov|m4v)(?:[?#].*)?$/i.test(url);
-      const media = document.createElement(isVideo ? 'video' : 'img');
-      media.src = url; media.alt = label;
-      if (isVideo) { media.controls = true; media.muted = true; media.playsInline = true; }
-      container.appendChild(media);
-    });
-  };
   const updateServicePreview = () => {
     const service = currentService();
     const frame = serviceManager.querySelector('[data-service-preview-frame]');
@@ -830,37 +650,35 @@ if (page.label === 'Services') {
         <div class="cms-project-manager-heading"><div><h2>${draftService ? 'Create service' : 'Edit service'}</h2><p>These fields map directly to the service detail page.</p><button class="cms-project-preview-toggle" type="button" data-service-preview-toggle>Preview</button></div><p>${service.status || 'Draft'}</p></div>
         <form class="cms-project-form" data-service-form>
           <div class="cms-project-field"><label>Title</label><input data-service-field="title" required /></div>
-          <div class="cms-project-field"><label>Status</label><select data-service-field="status"><option value="Draft">Draft</option><option value="Live">Live</option><option value="Archived">Archived</option></select><p class="cms-project-hint">Only Live services appear on the public Services page.</p></div>
+          <div class="cms-project-field"><label>Status</label><input data-service-field="status" /></div>
           <div class="cms-project-field"><label>Slug</label><input data-service-field="slug" required /></div>
           <div class="cms-project-field"><label>Description</label><textarea data-service-field="description"></textarea></div>
           <div class="cms-project-field"><label>Scope</label><input data-service-field="scope" /></div>
           <div class="cms-project-field"><label>Timeline</label><input data-service-field="timeline" /></div>
-          <div class="cms-project-field"><label>Main Image</label><div class="cms-project-media-control"><div class="cms-project-image-preview" data-service-media-preview="image"><span>No media yet</span></div><input type="url" data-service-field="image" placeholder="Image, GIF, or video URL" /></div></div>
+          <div class="cms-project-field"><label>Main Image</label><input type="url" data-service-field="image" placeholder="Image, GIF, or video URL" /></div>
           <div class="cms-service-section-label">Brand Application</div>
           <div class="cms-project-field"><label>Section title</label><input data-service-field="applicationTitle" /></div>
           <div class="cms-project-field"><label>Section intro</label><textarea data-service-field="applicationDescription"></textarea></div>
-          <div class="cms-project-field"><label>Application visuals</label><div class="cms-service-visual-list"><div class="cms-project-image-preview cms-service-media-list-preview" data-service-media-preview="applicationVisuals"><span>No media yet</span></div><textarea data-service-field="applicationVisuals" placeholder="One image, GIF, or video URL per line"></textarea><p class="cms-project-hint">These feed the Brand Application visual strip.</p></div></div>
-          <div class="cms-project-field"><label>Detail 1</label><div><input data-service-field="detail1Title" placeholder="Title" /><textarea data-service-field="detail1Description" placeholder="Description"></textarea><div class="cms-project-image-preview" data-service-media-preview="detail1Image"><span>No media yet</span></div><input type="url" data-service-field="detail1Image" placeholder="Image, GIF, or video URL" /></div></div>
-          <div class="cms-project-field"><label>Detail 2</label><div><input data-service-field="detail2Title" placeholder="Title" /><textarea data-service-field="detail2Description" placeholder="Description"></textarea><div class="cms-project-image-preview" data-service-media-preview="detail2Image"><span>No media yet</span></div><input type="url" data-service-field="detail2Image" placeholder="Image, GIF, or video URL" /></div></div>
-          <div class="cms-project-field"><label>Detail 3</label><div><input data-service-field="detail3Title" placeholder="Title" /><textarea data-service-field="detail3Description" placeholder="Description"></textarea><div class="cms-project-image-preview" data-service-media-preview="detail3Image"><span>No media yet</span></div><input type="url" data-service-field="detail3Image" placeholder="Image, GIF, or video URL" /></div></div>
-          <div class="cms-project-field"><label>Feature block</label><div><input data-service-field="featureTitle" placeholder="Title" /><textarea data-service-field="featureText" placeholder="Description"></textarea><div class="cms-project-image-preview" data-service-media-preview="featureImage"><span>No media yet</span></div><input type="url" data-service-field="featureImage" placeholder="Image, GIF, or video URL" /></div></div>
-          <div class="cms-project-field"><label>Website visual</label><div class="cms-project-media-control"><div class="cms-project-image-preview" data-service-media-preview="websiteImage"><span>No media yet</span></div><input type="url" data-service-field="websiteImage" placeholder="Image, GIF, or video URL" /></div></div>
+          <div class="cms-project-field"><label>Application visuals</label><div class="cms-service-visual-list"><textarea data-service-field="applicationVisuals" placeholder="One image, GIF, or video URL per line"></textarea><p class="cms-project-hint">These feed the Brand Application visual strip.</p></div></div>
+          <div class="cms-project-field"><label>Detail 1</label><div><input data-service-field="detail1Title" placeholder="Title" /><textarea data-service-field="detail1Description" placeholder="Description"></textarea><input type="url" data-service-field="detail1Image" placeholder="Image, GIF, or video URL" /></div></div>
+          <div class="cms-project-field"><label>Detail 2</label><div><input data-service-field="detail2Title" placeholder="Title" /><textarea data-service-field="detail2Description" placeholder="Description"></textarea><input type="url" data-service-field="detail2Image" placeholder="Image, GIF, or video URL" /></div></div>
+          <div class="cms-project-field"><label>Detail 3</label><div><input data-service-field="detail3Title" placeholder="Title" /><textarea data-service-field="detail3Description" placeholder="Description"></textarea><input type="url" data-service-field="detail3Image" placeholder="Image, GIF, or video URL" /></div></div>
+          <div class="cms-project-field"><label>Feature block</label><div><input data-service-field="featureTitle" placeholder="Title" /><textarea data-service-field="featureText" placeholder="Description"></textarea><input type="url" data-service-field="featureImage" placeholder="Image, GIF, or video URL" /></div></div>
+          <div class="cms-project-field"><label>Website visual</label><input type="url" data-service-field="websiteImage" placeholder="Image, GIF, or video URL" /></div>
           <div class="cms-project-form-actions"><span class="cms-project-notice">${notice}</span><button type="button" class="cms-project-cancel" data-service-cancel>Cancel</button><button class="cms-project-save" type="submit">Save service</button></div>
         </form>
-        <div class="cms-project-live-preview" data-service-live-preview><iframe data-service-preview-frame title="Exact service page preview" src="../services/branding/?cms=1&serviceEditor=1"></iframe></div>
+        <div class="cms-project-live-preview" data-service-live-preview><iframe data-service-preview-frame title="Exact service page preview" src="../services/branding/index.html?cms=1&serviceEditor=1"></iframe></div>
       </div>`;
     serviceManager.querySelectorAll('[data-service-field]').forEach((field) => {
       field.value = serviceValue(service, field.dataset.serviceField);
-      field.addEventListener('input', () => { service[field.dataset.serviceField] = field.dataset.serviceField === 'applicationVisuals' ? field.value.split(/\r?\n/).map((item) => item.trim()).filter(Boolean) : field.value; updateServicePreview(); updateServiceMediaPreviews(service); });
+      field.addEventListener('input', () => { service[field.dataset.serviceField] = field.dataset.serviceField === 'applicationVisuals' ? field.value.split(/\r?\n/).map((item) => item.trim()).filter(Boolean) : field.value; updateServicePreview(); });
     });
-    const updateServiceMediaPreviews = (value) => { serviceManager.querySelectorAll('[data-service-media-preview]').forEach((preview) => renderServiceMediaPreview(preview, value[preview.dataset.serviceMediaPreview])); };
-    updateServiceMediaPreviews(service);
     const previewFrame = serviceManager.querySelector('[data-service-preview-frame]');
     previewFrame.addEventListener('load', updateServicePreview);
     const previewToggle = serviceManager.querySelector('[data-service-preview-toggle]');
     previewToggle.addEventListener('click', () => { serviceManager.classList.toggle('is-previewing'); previewToggle.textContent = serviceManager.classList.contains('is-previewing') ? 'Edit fields' : 'Preview'; updateServicePreview(); });
     serviceManager.querySelector('[data-service-cancel]').addEventListener('click', () => { draftService = null; activeServiceId = services[0]?.id || null; renderServiceOptions(); renderServiceForm(); });
-    serviceManager.querySelector('[data-service-form]').addEventListener('submit', async (event) => { event.preventDefault(); service.slug = String(service.slug || service.title || 'new-service').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || `service-${Date.now()}`; service.id = service.id || service.slug; if (draftService) { services.push({ ...service }); activeServiceId = service.id; draftService = null; } saveServices(); try { const rows = await saveServiceToDatabase(service); const saved = Array.isArray(rows) && rows[0] ? fromDbService(rows[0]) : service; const index = services.findIndex((item) => item.id === saved.id); if (index >= 0) services.splice(index, 1, saved); activeServiceId = saved.id; renderServiceOptions(); renderServiceForm('Saved to Supabase'); serviceManager.classList.add('is-previewing'); } catch (error) { renderServiceForm(`Saved locally; database failed: ${error.message}`); } });
+    serviceManager.querySelector('[data-service-form]').addEventListener('submit', (event) => { event.preventDefault(); service.slug = String(service.slug || service.title || 'new-service').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || `service-${Date.now()}`; service.id = service.id || service.slug; if (draftService) { services.push({ ...service }); activeServiceId = service.id; draftService = null; } saveServices(); renderServiceOptions(); renderServiceForm('Saved locally'); serviceManager.classList.add('is-previewing'); });
     updateServicePreview();
   };
   serviceTools.hidden = false;
@@ -868,14 +686,13 @@ if (page.label === 'Services') {
   serviceManager.hidden = false;
   serviceFrame.hidden = true;
   if (editingStatus) editingStatus.hidden = true;
-  if (publicLink) publicLink.href = '../services/';
-  servicesPageLink.addEventListener('click', () => { const showing = !serviceManager.hidden; serviceManager.hidden = showing; serviceFrame.hidden = !showing; serviceFrame.src = '../services/index.html?cms=1&lockedMedia=1'; servicesPageLink.textContent = showing ? 'Back to editor' : 'View Services page â†—'; });
+  if (publicLink) publicLink.href = '../services/index.html';
+  servicesPageLink.addEventListener('click', () => { const showing = !serviceManager.hidden; serviceManager.hidden = showing; serviceFrame.hidden = !showing; serviceFrame.src = '../services/index.html?cms=1&lockedMedia=1'; servicesPageLink.textContent = showing ? 'Back to editor' : 'View Services page ↗'; });
   serviceSelect.addEventListener('change', () => { draftService = null; activeServiceId = serviceSelect.value; serviceManager.classList.remove('is-previewing'); renderServiceForm(); });
   newServiceButton.addEventListener('click', () => { draftService = { id: '', title: 'New service', status: 'Draft', slug: '', description: '', scope: '', timeline: '', image: '', applicationTitle: 'BRAND APPLICATION', applicationDescription: '', applicationVisuals: [], detail1Title: '', detail1Description: '', detail1Image: '', detail2Title: '', detail2Description: '', detail2Image: '', detail3Title: '', detail3Description: '', detail3Image: '', featureTitle: '', featureText: '', featureImage: '', websiteImage: '' }; renderServiceOptions(); renderServiceForm(); });
   window.addEventListener('message', (event) => { if (event.source !== serviceFrame.contentWindow || event.data?.source !== 'projectskevv-cms-service') return; const service = currentService(); if (!service) return; if (event.data.type === 'field-change' && event.data.field) { service[event.data.field] = event.data.value; const input = serviceManager.querySelector(`[data-service-field="${event.data.field}"]`); if (input) input.value = event.data.value; } });
   renderServiceOptions();
   renderServiceForm();
-  loadServices().catch((error) => console.error(error));
 }
 
 if (page.label === 'Journal') {
@@ -892,7 +709,7 @@ if (page.label === 'Journal') {
     id: 'texture-as-a-design-decision', title: 'Texture as a Design Decision Matter', status: 'Live', slug: 'texture-as-a-design-decision',
     description: 'Texture can make digital work feel tactile, human, and lived-in, but it can also weaken hierarchy fast.',
     image: 'https://framerusercontent.com/images/q5tU6RCU1nwpJZHJIht3hghY.png', tag: 'CRAFT', minutesRead: '4', authorName: 'JONAS KELLER', authorRole: 'Designer', authorImage: 'https://framerusercontent.com/images/v1GP5HmUip1qJrAvJFmQDDbSFVM.png',
-    content: '<p>Texture works when it carries a purpose. It can reduce the â€œtoo perfectâ€ feeling of digital surfaces, soften sharp compositions, and introduce a quiet sense of depth.</p><p>The problem is that texture is persuasive even when it is wrong. Type, spacing, and composition should lead.</p><h2>WHERE TEXTURE ACTUALLY HELPS</h2><p>Texture tends to shine in controlled areas: backgrounds, large image blocks, or sections that exist to set tone.</p>'
+    content: '<p>Texture works when it carries a purpose. It can reduce the “too perfect” feeling of digital surfaces, soften sharp compositions, and introduce a quiet sense of depth.</p><p>The problem is that texture is persuasive even when it is wrong. Type, spacing, and composition should lead.</p><h2>WHERE TEXTURE ACTUALLY HELPS</h2><p>Texture tends to shine in controlled areas: backgrounds, large image blocks, or sections that exist to set tone.</p>'
   }];
   let accessToken = '';
   const journals = [];
@@ -901,29 +718,18 @@ if (page.label === 'Journal') {
   let journalPreviewMode = false;
   let journalLoadError = '';
   const currentJournal = () => draftJournal || journals.find((journal) => journal.id === activeJournalId) || journals[0];
-  const renderJournalMediaPreview = (container, source, label = 'Media preview') => {
-    if (!container) return;
-    container.innerHTML = '';
-    const url = String(source || '').trim();
-    if (!url) { container.innerHTML = '<span>No media yet</span>'; return; }
-    const isVideo = /\.(mp4|webm|ogg|mov|m4v)(?:[?#].*)?$/i.test(url);
-    const media = document.createElement(isVideo ? 'video' : 'img');
-    media.src = url; media.alt = label;
-    if (isVideo) { media.controls = true; media.muted = true; media.playsInline = true; }
-    container.appendChild(media);
-  };
   const journalRequest = async (path, options = {}) => {
-    const response = await fetch(`${supabaseUrl}/rest/v1/${path}`, {
+    const query = path.includes('?') ? `?${path.split('?')[1]}` : '';
+    const response = await fetch(`/api/cms/journal${query}`, {
       ...options,
       headers: {
-        apikey: supabasePublishableKey,
-        Authorization: `Bearer ${accessToken || supabasePublishableKey}`,
         Accept: 'application/json',
         ...(options.body ? { 'Content-Type': 'application/json' } : {}),
         ...(options.headers || {})
-      }
+      },
+      credentials: 'same-origin'
     });
-    if (!response.ok) throw new Error(`Supabase request failed (${response.status}): ${await response.text()}`);
+    if (!response.ok) throw new Error(`Journal request failed (${response.status}): ${await response.text()}`);
     return response.status === 204 ? null : response.json();
   };
   const fromDbJournal = (row) => ({
@@ -931,7 +737,7 @@ if (page.label === 'Journal') {
     description: row.description || '', image: row.cover_image_url || '', tag: row.tag || '', minutesRead: String(row.minutes_read || 1), authorName: row.author_name || '', authorRole: row.author_role || '', authorImage: row.author_image_url || '', content: row.content_html || '',
     publishedAt: row.published_at, createdAt: row.created_at, updatedAt: row.updated_at
   });
-  const journalStatus = (status) => ['live', 'published'].includes(String(status || '').toLowerCase()) ? 'published' : String(status || '').toLowerCase() === 'archived' ? 'archived' : 'draft';
+  const journalStatus = (status) => String(status || '').toLowerCase() === 'live' ? 'published' : String(status || '').toLowerCase() === 'archived' ? 'archived' : 'draft';
   const toDbJournal = (journal) => ({
     title: journal.title || 'Untitled journal', slug: journal.slug, status: journalStatus(journal.status), description: journal.description || '', content_html: journal.content || '', cover_image_url: journal.image || null,
     tag: journal.tag || '', minutes_read: Math.max(1, Number(journal.minutesRead) || 1), author_name: journal.authorName || '', author_role: journal.authorRole || '', author_image_url: journal.authorImage || null,
@@ -960,17 +766,7 @@ if (page.label === 'Journal') {
     setText('.journal-article-meta span:first-child strong', journal.tag);
     setText('.journal-author strong', journal.authorName);
     setText('.journal-author span', journal.authorRole);
-    const feature = doc.querySelector('.journal-article-feature figure');
-    if (feature) {
-      const source = String(journal.image || '').trim();
-      const videoSource = /\.(mp4|webm|ogg|mov|m4v)(?:[?#].*)?$/i.test(source);
-      let media = feature.querySelector('img, video');
-      if (media && ((videoSource && media.tagName.toLowerCase() !== 'video') || (!videoSource && media.tagName.toLowerCase() !== 'img'))) { media.remove(); media = null; }
-      if (!media) { media = doc.createElement(videoSource ? 'video' : 'img'); feature.innerHTML = ''; feature.appendChild(media); }
-      media.src = source;
-      media.alt = journal.title || '';
-      if (videoSource) { media.autoplay = true; media.muted = true; media.loop = true; media.playsInline = true; media.controls = true; media.load(); }
-    }
+    const image = doc.querySelector('.journal-article-feature figure img'); if (image) image.src = journal.image || '';
     const authorImage = doc.querySelector('.journal-author img'); if (authorImage) authorImage.src = journal.authorImage || '';
     const copy = doc.querySelector('.journal-article-copy'); if (copy) copy.innerHTML = journal.content || '';
   };
@@ -984,22 +780,20 @@ if (page.label === 'Journal') {
     }
   journalManager.innerHTML = `
       <div class="cms-project-manager-inner"><div class="cms-project-manager-heading"><div><h2>${draftJournal ? 'Create journal' : 'Edit journal'}</h2><p>Write and format the article content directly in the CMS.</p><button class="cms-project-preview-toggle" type="button" data-journal-preview-toggle>Preview</button></div><p>${journal.status || 'Draft'}</p></div>
-      <div class="cms-journal-auth"><strong>Connected to Supabase</strong></div>
+      <div class="cms-journal-auth"><strong>${accessToken ? 'Secure admin session active' : 'Sign in to save changes'}</strong>${accessToken ? '<button type="button" data-journal-sign-out>Sign out</button>' : ''}</div>
       <form class="cms-project-form" data-journal-form>
         <div class="cms-project-field"><label>Title</label><input data-journal-field="title" required /></div>
-        <div class="cms-project-field"><label>Status</label><select data-journal-field="status"><option value="Draft">Draft</option><option value="Live">Live</option><option value="Archived">Archived</option></select></div>
+        <div class="cms-project-field"><label>Status</label><input data-journal-field="status" /></div>
         <div class="cms-project-field"><label>Slug</label><input data-journal-field="slug" required /></div>
         <div class="cms-project-field"><label>Description</label><textarea data-journal-field="description"></textarea></div>
-        <div class="cms-project-field"><label>Main Image / Thumb</label><div class="cms-project-media-control"><div class="cms-project-image-preview" data-journal-media-preview="image"><span>No media yet</span></div><input type="url" data-journal-field="image" placeholder="Image, GIF, or video URL" /></div></div>
+        <div class="cms-project-field"><label>Main Image / Thumb</label><input type="url" data-journal-field="image" placeholder="Image, GIF, or video URL" /></div>
         <div class="cms-project-field"><label>Tag</label><input data-journal-field="tag" /></div>
         <div class="cms-project-field"><label>Minutes read</label><input type="number" min="1" data-journal-field="minutesRead" /></div>
-        <div class="cms-project-field"><label>Content</label><div><div class="cms-journal-editor-toolbar"><button type="button" data-command="bold"><b>B</b></button><button type="button" data-command="italic"><i>I</i></button><button type="button" data-command="underline"><u>U</u></button><select data-format-block aria-label="Text style"><option value="p">Paragraph</option><option value="h2">Heading 2</option><option value="h3">Heading 3</option><option value="blockquote">Quote</option></select><button type="button" data-command="insertUnorderedList">â€¢ List</button><button type="button" data-command="insertOrderedList">1. List</button><button type="button" data-command="createLink">Link</button><button type="button" data-command="undo">Undo</button><button type="button" data-command="redo">Redo</button></div><div class="cms-journal-rich-text" contenteditable="true" data-journal-content aria-label="Journal content"></div><p class="cms-project-hint">Select text, then use the toolbar to format it.</p></div></div>
-        <div class="cms-project-field"><label>Author name</label><input data-journal-field="authorName" /></div><div class="cms-project-field"><label>Author role</label><input data-journal-field="authorRole" /></div><div class="cms-project-field"><label>Author image</label><div class="cms-project-media-control"><div class="cms-project-image-preview" data-journal-media-preview="authorImage"><span>No media yet</span></div><input type="url" data-journal-field="authorImage" placeholder="Image URL" /></div></div>
+        <div class="cms-project-field"><label>Content</label><div><div class="cms-journal-editor-toolbar"><button type="button" data-command="bold"><b>B</b></button><button type="button" data-command="italic"><i>I</i></button><button type="button" data-command="underline"><u>U</u></button><select data-format-block aria-label="Text style"><option value="p">Paragraph</option><option value="h2">Heading 2</option><option value="h3">Heading 3</option><option value="blockquote">Quote</option></select><button type="button" data-command="insertUnorderedList">• List</button><button type="button" data-command="insertOrderedList">1. List</button><button type="button" data-command="createLink">Link</button><button type="button" data-command="undo">Undo</button><button type="button" data-command="redo">Redo</button></div><div class="cms-journal-rich-text" contenteditable="true" data-journal-content aria-label="Journal content"></div><p class="cms-project-hint">Select text, then use the toolbar to format it.</p></div></div>
+        <div class="cms-project-field"><label>Author name</label><input data-journal-field="authorName" /></div><div class="cms-project-field"><label>Author role</label><input data-journal-field="authorRole" /></div><div class="cms-project-field"><label>Author image</label><input type="url" data-journal-field="authorImage" placeholder="Image URL" /></div>
         <div class="cms-project-form-actions"><span class="cms-project-notice">${notice}</span><button type="button" class="cms-project-cancel" data-journal-cancel>Cancel</button><button class="cms-project-save" type="submit">Save journal</button></div>
-      </form><div class="cms-project-live-preview" data-journal-live-preview><iframe data-journal-preview-frame title="Exact journal page preview" src="../journal/texture-as-a-design-decision/?cms=1&journalEditor=1"></iframe></div></div>`;
-    journalManager.querySelectorAll('[data-journal-field]').forEach((field) => { field.value = journalValue(journal, field.dataset.journalField); field.addEventListener('input', () => { journal[field.dataset.journalField] = field.value; updateJournalPreview(); updateJournalMediaPreviews(journal); }); });
-    const updateJournalMediaPreviews = (value) => { journalManager.querySelectorAll('[data-journal-media-preview]').forEach((preview) => renderJournalMediaPreview(preview, value[preview.dataset.journalMediaPreview], preview.dataset.journalMediaPreview)); };
-    updateJournalMediaPreviews(journal);
+      </form><div class="cms-project-live-preview" data-journal-live-preview><iframe data-journal-preview-frame title="Exact journal page preview" src="../journal/texture-as-a-design-decision/index.html?cms=1&journalEditor=1"></iframe></div></div>`;
+    journalManager.querySelectorAll('[data-journal-field]').forEach((field) => { field.value = journalValue(journal, field.dataset.journalField); field.addEventListener('input', () => { journal[field.dataset.journalField] = field.value; updateJournalPreview(); }); });
     const content = journalManager.querySelector('[data-journal-content]'); content.innerHTML = journal.content || '';
     content.addEventListener('input', () => { journal.content = content.innerHTML; updateJournalPreview(); });
     journalManager.querySelectorAll('[data-command]').forEach((button) => button.addEventListener('click', () => { content.focus(); const command = button.dataset.command; if (command === 'createLink') { const url = window.prompt('Link URL'); if (url) document.execCommand(command, false, url); } else document.execCommand(command, false, null); journal.content = content.innerHTML; updateJournalPreview(); }));
@@ -1024,6 +818,7 @@ if (page.label === 'Journal') {
     journalManager.querySelector('[data-journal-form]').addEventListener('submit', async (event) => {
       event.preventDefault();
       journal.slug = String(journal.slug || journal.title || 'new-journal').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || `journal-${Date.now()}`;
+      if (!accessToken) { showJournalNotice('Sign in before saving.'); return; }
       try {
         if (draftJournal) {
           const created = await journalRequest('journal_posts', { method: 'POST', headers: { Prefer: 'return=representation' }, body: JSON.stringify(toDbJournal(journal)) });
@@ -1037,10 +832,10 @@ if (page.label === 'Journal') {
     });
     updateJournalPreview();
   };
-  journalTools.hidden = false; document.querySelector('#cms-project-tools').hidden = true; document.querySelector('#cms-service-tools').hidden = true; journalManager.hidden = false; journalFrame.hidden = true; if (editingStatus) editingStatus.hidden = true; if (publicLink) publicLink.href = '../journal/';
-  journalsPageLink.addEventListener('click', () => { const showing = !journalManager.hidden; journalManager.hidden = showing; journalFrame.hidden = !showing; journalFrame.src = '../journal/index.html?cms=1&lockedMedia=1'; journalsPageLink.textContent = showing ? 'Back to editor' : 'View Journal page â†—'; });
+  journalTools.hidden = false; document.querySelector('#cms-project-tools').hidden = true; document.querySelector('#cms-service-tools').hidden = true; journalManager.hidden = false; journalFrame.hidden = true; if (editingStatus) editingStatus.hidden = true; if (publicLink) publicLink.href = '../journal/index.html';
+  journalsPageLink.addEventListener('click', () => { const showing = !journalManager.hidden; journalManager.hidden = showing; journalFrame.hidden = !showing; journalFrame.src = '../journal/index.html?cms=1&lockedMedia=1'; journalsPageLink.textContent = showing ? 'Back to editor' : 'View Journal page ↗'; });
   journalSelect.addEventListener('change', () => { draftJournal = null; activeJournalId = journalSelect.value; journalPreviewMode = false; renderJournalForm(); });
-  newJournalButton.addEventListener('click', () => { draftJournal = { id: '', title: 'New journal', status: 'Live', slug: '', description: '', image: '', tag: '', minutesRead: '5', authorName: '', authorRole: '', authorImage: '', content: '<p>Start writing your journal article here.</p>' }; renderJournalOptions(); renderJournalForm(); });
+  newJournalButton.addEventListener('click', () => { draftJournal = { id: '', title: 'New journal', status: 'Draft', slug: '', description: '', image: '', tag: '', minutesRead: '5', authorName: '', authorRole: '', authorImage: '', content: '<p>Start writing your journal article here.</p>' }; renderJournalOptions(); renderJournalForm(); });
   window.addEventListener('message', (event) => { if (event.source !== journalFrame.contentWindow || event.data?.source !== 'projectskevv-cms-journal') return; const journal = currentJournal(); if ((event.data.type === 'field-change' || event.data.type === 'media-change') && event.data.field) { journal[event.data.field] = event.data.value; const field = journalManager.querySelector(`[data-journal-field="${event.data.field}"]`); if (field) field.value = event.data.value; const content = journalManager.querySelector('[data-journal-content]'); if (event.data.field === 'content' && content) content.innerHTML = event.data.value; updateJournalPreview(); } });
   renderJournalOptions(); renderJournalForm();
   loadJournals().then(() => { journalLoadError = ''; renderJournalOptions(); renderJournalForm(); }).catch((error) => { console.error(error); journalLoadError = error.message; renderJournalOptions(); renderJournalForm(); });

@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="./admin.css?v=20261022" />
+    <link rel="stylesheet" href="./admin.css?v=20261006" />
   </head>
   <body>
     <div class="admin-shell">
@@ -15,15 +15,12 @@
         <div class="admin-sidebar-top">
           <a class="admin-wordmark" href="./" aria-label="Projectskevv admin home">PROJECTSKEVV</a>
           <span class="admin-label">ADMIN</span>
-          <button class="admin-sidebar-toggle" type="button" aria-label="Collapse admin sidebar" aria-expanded="true" title="Collapse sidebar">
-            <span class="admin-sidebar-toggle-icon" aria-hidden="true">‹</span>
-          </button>
         </div>
 
         <div class="admin-tabs" role="tablist" aria-label="Admin sections">
-          <button class="admin-tab is-active" type="button" role="tab" aria-selected="true" data-admin-tab="collections">Collections</button>
-          <button class="admin-tab" type="button" role="tab" aria-selected="false" data-admin-tab="fields">Fields</button>
-          <button class="admin-tab" type="button" role="tab" aria-selected="false" data-admin-tab="plugins">Plugins</button>
+          <button class="admin-tab is-active" type="button" role="tab" aria-selected="true">Collections</button>
+          <button class="admin-tab" type="button" role="tab" aria-selected="false">Fields</button>
+          <button class="admin-tab" type="button" role="tab" aria-selected="false">Plugins</button>
         </div>
 
         <label class="admin-search">
@@ -55,19 +52,6 @@
           </a>
         </nav>
 
-        <section class="admin-fields-panel" data-admin-fields-panel hidden aria-label="Database fields">
-          <div class="admin-fields-collection-row">
-            <label for="admin-fields-collection">Collection</label>
-            <select id="admin-fields-collection" data-admin-fields-collection aria-label="Choose collection"></select>
-          </div>
-          <div class="admin-fields-heading"><strong>Fields</strong><button type="button" aria-label="Add field" title="Add field">+</button></div>
-          <div class="admin-fields-list" data-admin-fields-list></div>
-        </section>
-
-        <section class="admin-plugins-panel" data-admin-plugins-panel hidden aria-label="Plugins">
-          <p>Plugins will appear here when connected.</p>
-        </section>
-
         <div class="admin-sidebar-footer">
           <span class="status-dot" aria-hidden="true"></span>
           <span>Connected</span>
@@ -75,6 +59,15 @@
       </aside>
 
       <main class="admin-workspace" aria-label="Admin workspace">
+        <header class="admin-toolbar">
+          <button class="toolbar-button" type="button" aria-label="Open admin navigation">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"></path></svg>
+          </button>
+          <span class="toolbar-spacer"></span>
+          <button class="toolbar-button" type="button" aria-label="More options">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle></svg>
+          </button>
+        </header>
         <div class="cms-preview-bar">
           <div><span class="cms-preview-kicker">CMS PREVIEW</span><strong id="cms-page-title">Home</strong><span class="cms-editing-status" id="cms-editing-status"><span class="cms-editing-dot"></span>Editing · <time id="cms-editing-time"></time></span></div>
           <div class="cms-project-tools" id="cms-project-tools" hidden><select id="cms-project-select" aria-label="Choose project"></select><button id="cms-new-project" type="button">+ New project</button><button class="cms-projects-view-toggle" id="cms-projects-page-link" type="button">View Projects page ↗</button></div>
@@ -94,6 +87,6 @@
         </section>
       </main>
     </div>
-    <script src="./admin.js?v=20261022"></script>
+    <script src="./admin.js?v=20261005"></script>
   </body>
 </html>
