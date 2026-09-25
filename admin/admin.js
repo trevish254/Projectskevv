@@ -23,16 +23,14 @@ if (window.location.protocol === 'file:') {
   window.setTimeout(() => { window.location.replace(`http://127.0.0.1:4173/admin/index.html${window.location.search}`); }, 250);
 }
 const adminAuthReady = new Promise((resolve) => {
-  const finish = () => { window.projectskevvAdminAccessToken = 'custom-session'; document.body.classList.remove('admin-auth-pending'); adminAuthGate.hidden = true; resolve(true); };
-  // Temporary UI-only access while the authentication integration is being replaced.
-  finish();
-  return;
-  const validate = async (token) => {
-    const response = await adminAuthFetch(adminAuthUserUrl, { credentials: 'same-origin' });
-    if (!response.ok) throw new Error(await readSupabaseError(response));
-    return response.json();
-  };
-  validate().then(() => finish()).catch(() => { adminAuthGate.hidden = false; });
+  const finish = (accessToken) => { window.projectskevvAdminAccessToken = accessToken; document.body.classList.remove('admin-auth-pending'); adminAuthGate.hidden = true; resolve(true); };
+  let storedToken = '';
+  try { storedToken = sessionStorage.getItem('projectskevv.supabase.access_token') || ''; } catch { storedToken = ''; }
+  if (storedToken) {
+    adminAuthFetch(adminAuthUserUrl, { headers: { Authorization: `Bearer ${storedToken}` }, credentials: 'same-origin' })
+      .then((response) => { if (!response.ok) throw new Error('Session expired'); finish(storedToken); })
+      .catch(() => { try { sessionStorage.removeItem('projectskevv.supabase.access_token'); } catch { /* session storage may be unavailable */ } document.body.classList.remove('admin-auth-pending'); adminAuthGate.hidden = true; resolve(true); });
+  } else { document.body.classList.remove('admin-auth-pending'); adminAuthGate.hidden = true; resolve(true); }
   adminAuthGate.querySelector('[data-admin-auth-form]').addEventListener('submit', async (event) => {
     event.preventDefault();
     const form = event.currentTarget;
@@ -45,8 +43,10 @@ const adminAuthReady = new Promise((resolve) => {
     try {
       const response = await adminAuthFetch(adminAuthLoginUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify({ email, password }) });
       if (!response.ok) throw new Error(await readSupabaseError(response));
-      await response.json();
-      finish();
+      const session = await response.json();
+      if (!session.access_token) throw new Error('Authentication response did not include an access token');
+      try { sessionStorage.setItem('projectskevv.supabase.access_token', session.access_token); } catch { /* session storage may be unavailable */ }
+      finish(session.access_token);
     } catch (error) { adminAuthMessage.textContent = error.name === 'AbortError' ? 'Sign in timed out. Check your connection.' : `Sign in failed: ${error.message}`; submitButton.disabled = false; submitButton.textContent = 'Sign in'; }
   });
   adminAuthGate.querySelector('[data-admin-emergency]').addEventListener('click', async () => {
@@ -59,8 +59,10 @@ const adminAuthReady = new Promise((resolve) => {
     try {
       const response = await adminAuthFetch('/api/auth/emergency', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify({ email, token }) });
       if (!response.ok) throw new Error(await readSupabaseError(response));
-      await response.json();
-      finish();
+      const session = await response.json();
+      if (!session.access_token) throw new Error('Authentication response did not include an access token');
+      try { sessionStorage.setItem('projectskevv.supabase.access_token', session.access_token); } catch { /* session storage may be unavailable */ }
+      finish(session.access_token);
     } catch (error) { adminAuthMessage.textContent = `Emergency access failed: ${error.message}`; button.disabled = false; button.textContent = 'Use emergency key'; }
   });
 });
@@ -301,6 +303,18 @@ if (page.label === 'Projects') {
   let draftProject = null;
   let projectPreviewMode = false;
   let projectListingMode = false;
+
+  const loadProjects = async () => {
+    try {
+      const response = await fetch(`${adminSupabaseUrl}/rest/v1/project_posts?select=id,title,slug,status,description,body_text,cover_image_url,tag,duration,client,website_url,gallery_urls,video_url,video_poster_url&order=created_at.desc`, { headers: { apikey: adminSupabasePublishableKey, Authorization: `Bearer ${adminSupabasePublishableKey}`, Accept: 'application/json' } });
+      if (!response.ok) throw new Error(await response.text());
+      const rows = await response.json();
+      projects.splice(0, projects.length, ...rows.map((row) => ({ id: row.id, title: row.title || '', status: row.status === 'published' ? 'Live' : row.status === 'archived' ? 'Archived' : 'Draft', slug: row.slug || '', description: row.description || '', text: row.body_text || '', image: row.cover_image_url || '', tag: row.tag || '', duration: row.duration || '', client: row.client || '', website: row.website_url || '', gallery: Array.isArray(row.gallery_urls) ? row.gallery_urls : [], useVideo: Boolean(row.video_url), videoPoster: row.video_poster_url || '', videoFile: row.video_url || '' })));
+      activeProjectId = projects[0]?.id || null;
+      renderProjectOptions();
+      renderProjectForm();
+    } catch (error) { console.error('Unable to load Supabase projects', error); }
+  };
 
   const saveProjects = () => {
     try { localStorage.setItem(projectsStorageKey, JSON.stringify(projects)); } catch { /* local preview storage may be unavailable */ }
@@ -573,6 +587,7 @@ if (page.label === 'Projects') {
     }
   });
   openProjectManager();
+  loadProjects();
 }
 
 if (page.label === 'Services') {
@@ -599,6 +614,18 @@ if (page.label === 'Services') {
   const services = storedServices.length ? storedServices : seedServices;
   let activeServiceId = services[0]?.id || null;
   let draftService = null;
+
+  const loadServices = async () => {
+    try {
+      const response = await fetch(`${adminSupabaseUrl}/rest/v1/service_posts?select=id,title,slug,status,description,scope,timeline,image,application_title,application_description,application_visuals,detail1_title,detail1_description,detail1_image,detail2_title,detail2_description,detail2_image,detail3_title,detail3_description,detail3_image,feature_title,feature_text,feature_image,website_image&order=created_at.desc`, { headers: { apikey: adminSupabasePublishableKey, Authorization: `Bearer ${adminSupabasePublishableKey}`, Accept: 'application/json' } });
+      if (!response.ok) throw new Error(await response.text());
+      const rows = await response.json();
+      services.splice(0, services.length, ...rows.map((row) => ({ id: row.id, title: row.title || '', status: row.status === 'published' ? 'Live' : row.status === 'archived' ? 'Archived' : 'Draft', slug: row.slug || '', description: row.description || '', scope: row.scope || '', timeline: row.timeline || '', image: row.image || '', applicationTitle: row.application_title || '', applicationDescription: row.application_description || '', applicationVisuals: Array.isArray(row.application_visuals) ? row.application_visuals : [], detail1Title: row.detail1_title || '', detail1Description: row.detail1_description || '', detail1Image: row.detail1_image || '', detail2Title: row.detail2_title || '', detail2Description: row.detail2_description || '', detail2Image: row.detail2_image || '', detail3Title: row.detail3_title || '', detail3Description: row.detail3_description || '', detail3Image: row.detail3_image || '', featureTitle: row.feature_title || '', featureText: row.feature_text || '', featureImage: row.feature_image || '', websiteImage: row.website_image || '' })));
+      activeServiceId = services[0]?.id || null;
+      renderServiceOptions();
+      renderServiceForm();
+    } catch (error) { console.error('Unable to load Supabase services', error); }
+  };
 
   const currentService = () => draftService || services.find((service) => service.id === activeServiceId) || services[0];
   const saveServices = () => { try { localStorage.setItem(servicesStorageKey, JSON.stringify(services)); } catch { /* local preview storage may be unavailable */ } };
@@ -693,6 +720,7 @@ if (page.label === 'Services') {
   window.addEventListener('message', (event) => { if (event.source !== serviceFrame.contentWindow || event.data?.source !== 'projectskevv-cms-service') return; const service = currentService(); if (!service) return; if (event.data.type === 'field-change' && event.data.field) { service[event.data.field] = event.data.value; const input = serviceManager.querySelector(`[data-service-field="${event.data.field}"]`); if (input) input.value = event.data.value; } });
   renderServiceOptions();
   renderServiceForm();
+  loadServices();
 }
 
 if (page.label === 'Journal') {
@@ -717,6 +745,7 @@ if (page.label === 'Journal') {
   let draftJournal = null;
   let journalPreviewMode = false;
   let journalLoadError = '';
+  let journalLoading = true;
   const currentJournal = () => draftJournal || journals.find((journal) => journal.id === activeJournalId) || journals[0];
   const journalRequest = async (path, options = {}) => {
     const query = path.includes('?') ? `?${path.split('?')[1]}` : '';
@@ -724,6 +753,7 @@ if (page.label === 'Journal') {
       ...options,
       headers: {
         Accept: 'application/json',
+        ...(window.projectskevvAdminAccessToken ? { Authorization: `Bearer ${window.projectskevvAdminAccessToken}` } : {}),
         ...(options.body ? { 'Content-Type': 'application/json' } : {}),
         ...(options.headers || {})
       },
@@ -750,6 +780,7 @@ if (page.label === 'Journal') {
     const rows = await journalRequest(`journal_posts?select=${encodeURIComponent(journalColumns)}&order=created_at.desc`);
     journals.splice(0, journals.length, ...rows.map(fromDbJournal));
     activeJournalId = journals[0]?.id || null;
+    journalLoading = false;
   };
   const journalValue = (journal, field) => journal[field] ?? '';
   const updateJournalPreview = () => {
@@ -774,8 +805,10 @@ if (page.label === 'Journal') {
   const renderJournalForm = (notice = '') => {
     const journal = currentJournal();
     if (!journal) {
-      journalManager.innerHTML = `<div class="cms-project-manager-inner cms-empty-state"><h2>${journalLoadError ? 'Unable to load Journal' : 'Your Journal collection is empty'}</h2><p>${journalLoadError || 'Create your first journal entry to begin adding articles.'}</p><button type="button" class="cms-project-save" data-empty-new-journal>+ New journal</button></div>`;
-      journalManager.querySelector('[data-empty-new-journal]').addEventListener('click', () => newJournalButton.click());
+      const title = journalLoading ? 'Loading Journal' : journalLoadError ? 'Unable to load Journal' : 'Your Journal collection is empty';
+      const message = journalLoading ? 'Retrieving journal entries from the database...' : journalLoadError || 'Create your first journal entry to begin adding articles.';
+      journalManager.innerHTML = `<div class="cms-project-manager-inner cms-empty-state"><h2>${title}</h2><p>${message}</p>${journalLoading ? '' : '<button type="button" class="cms-project-save" data-empty-new-journal>+ New journal</button>'}</div>`;
+      journalManager.querySelector('[data-empty-new-journal]')?.addEventListener('click', () => newJournalButton.click());
       return;
     }
   journalManager.innerHTML = `
@@ -838,5 +871,5 @@ if (page.label === 'Journal') {
   newJournalButton.addEventListener('click', () => { draftJournal = { id: '', title: 'New journal', status: 'Draft', slug: '', description: '', image: '', tag: '', minutesRead: '5', authorName: '', authorRole: '', authorImage: '', content: '<p>Start writing your journal article here.</p>' }; renderJournalOptions(); renderJournalForm(); });
   window.addEventListener('message', (event) => { if (event.source !== journalFrame.contentWindow || event.data?.source !== 'projectskevv-cms-journal') return; const journal = currentJournal(); if ((event.data.type === 'field-change' || event.data.type === 'media-change') && event.data.field) { journal[event.data.field] = event.data.value; const field = journalManager.querySelector(`[data-journal-field="${event.data.field}"]`); if (field) field.value = event.data.value; const content = journalManager.querySelector('[data-journal-content]'); if (event.data.field === 'content' && content) content.innerHTML = event.data.value; updateJournalPreview(); } });
   renderJournalOptions(); renderJournalForm();
-  loadJournals().then(() => { journalLoadError = ''; renderJournalOptions(); renderJournalForm(); }).catch((error) => { console.error(error); journalLoadError = error.message; renderJournalOptions(); renderJournalForm(); });
+  loadJournals().then(() => { journalLoadError = ''; renderJournalOptions(); renderJournalForm(); }).catch((error) => { console.error(error); journalLoading = false; journalLoadError = error.message; renderJournalOptions(); renderJournalForm(); });
 }
