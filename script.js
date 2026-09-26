@@ -29,6 +29,8 @@ if (window.location.protocol === 'file:') {
   if (projectPath) window.location.replace(`http://127.0.0.1:4173/${projectPath}${window.location.search}`);
 }
 
+const revealDbContent = (element) => { if (element) element.classList.add('db-content-ready'); };
+
 // Supabase browser client.
 // Only the publishable key belongs in client-side code. Never put the service
 // role key here: it bypasses Row Level Security and must stay server-side.
@@ -229,8 +231,10 @@ if (journalListing) {
         card.innerHTML = `${journalMedia(post.cover_image_url, title)}<div class="article-content"><span class="read-time">${post.minutes_read || 1} min read</span><h2>${title}</h2><span class="read-link">READ ARTICLE <span aria-hidden="true">↗</span></span></div>`;
         journalListing.appendChild(card);
       });
+      revealDbContent(journalListing);
     } catch (error) {
       journalListing.innerHTML = '<p class="journal-empty-state">Journal articles are unavailable right now.</p>';
+      revealDbContent(journalListing);
       console.error(error);
     }
   };
@@ -266,9 +270,11 @@ if (projectListing) {
         if (label) label.textContent = project.tag || '';
         projectListing.appendChild(card);
       });
+      revealDbContent(projectListing);
     } catch (error) {
       console.error(error);
       projectListing.innerHTML = '<p class="project-empty-state">Projects are unavailable right now.</p>';
+      revealDbContent(projectListing);
     }
   };
   renderProjectListing();
@@ -310,8 +316,10 @@ if (homeProjectGrid) {
         card.append(media, meta);
         homeProjectGrid.appendChild(card);
       });
+      revealDbContent(homeProjectGrid);
     } catch (error) {
       homeProjectGrid.innerHTML = '<p class="project-empty-state">Projects are unavailable right now.</p>';
+      revealDbContent(homeProjectGrid);
       console.error(error);
     }
   };
@@ -347,7 +355,9 @@ if (journalGrids.length) {
         card.innerHTML = `${journalGridMedia(post.cover_image_url, title)}<div class="article-content"><span class="read-time">${post.minutes_read || 1} min read</span><h3>${title}</h3><span class="read-link">READ ARTICLE <span aria-hidden="true">↗</span></span></div>`;
         entry.element.appendChild(card);
       });
+      revealDbContent(entry.element);
     } catch (error) {
+      revealDbContent(entry.element);
       console.error(error);
     }
   };
@@ -363,7 +373,7 @@ if (isPublicProjectDetail) {
     try {
       const rows = await window.projectskevvDb.from('project_posts').select('title,slug,description,body_text,cover_image_url,tag,duration,client,website_url,gallery_urls,published_at', `status=eq.published&slug=eq.${encodeURIComponent(projectSlug)}`);
       const project = rows[0];
-      if (!project) { document.querySelector('main').innerHTML = '<section class="project-empty-state"><p>This project is not published.</p></section>'; return; }
+      if (!project) { document.querySelector('main').innerHTML = '<section class="project-empty-state"><p>This project is not published.</p></section>'; revealDbContent(document.querySelector('.project-detail-page main')); return; }
       const setText = (selector, value) => { const element = document.querySelector(selector); if (element) element.textContent = value || ''; };
       setText('.project-detail-title-wrap h1', (project.title || 'Untitled project').toUpperCase());
       setText('.project-detail-description', project.description);
@@ -413,7 +423,8 @@ if (isPublicProjectDetail) {
           relatedGrid.appendChild(card);
         });
       }
-    } catch (error) { document.querySelector('main').innerHTML = '<section class="project-empty-state"><p>Project unavailable right now.</p></section>'; console.error(error); }
+      revealDbContent(document.querySelector('.project-detail-page main'));
+    } catch (error) { document.querySelector('main').innerHTML = '<section class="project-empty-state"><p>Project unavailable right now.</p></section>'; revealDbContent(document.querySelector('.project-detail-page main')); console.error(error); }
   };
   renderProjectDetail();
 }
@@ -433,7 +444,8 @@ if (serviceListing) {
         link.innerHTML = `<div class="service-row"><div class="service-info"><div class="service-image"><img src="${service.image || ''}" alt="${service.title || ''}" /></div><span class="service-name">${service.title || 'Untitled service'}</span></div><div class="service-action"><span>VIEW PORTAL</span><span class="arrow-icon">→</span></div></div>`;
         serviceListing.appendChild(link);
       });
-    } catch (error) { console.error(error); }
+      revealDbContent(serviceListing);
+    } catch (error) { revealDbContent(serviceListing); console.error(error); }
   };
   renderServiceListing();
 }
@@ -466,8 +478,10 @@ if (homeServicesList) {
         link.querySelector('.service-image').appendChild(image);
         homeServicesList.appendChild(link);
       });
+      revealDbContent(homeServicesList);
     } catch (error) {
       homeServicesList.innerHTML = '<p class="service-empty-state">Services are unavailable right now.</p>';
+      revealDbContent(homeServicesList);
       console.error(error);
     }
   };
@@ -509,7 +523,7 @@ if (isPublicServiceDetail) {
     try {
       const rows = await window.projectskevvDb.from('service_posts').select('title,slug,description,scope,timeline,image,application_title,application_description,application_visuals,detail1_title,detail1_description,detail1_image,detail2_title,detail2_description,detail2_image,detail3_title,detail3_description,detail3_image,feature_title,feature_text,feature_image,website_image,status,published_at', `status=eq.published&slug=eq.${encodeURIComponent(serviceSlug)}`);
       const service = rows[0];
-      if (!service) { document.querySelector('main').innerHTML = '<section class="project-empty-state"><p>This service is not published.</p></section>'; return; }
+      if (!service) { document.querySelector('main').innerHTML = '<section class="project-empty-state"><p>This service is not published.</p></section>'; revealDbContent(document.querySelector('.service-detail-page main')); return; }
       const setText = (selector, value) => { const element = document.querySelector(selector); if (element) element.textContent = value || ''; };
       setText('#service-title', (service.title || 'Untitled service').toUpperCase());
       setText('.project-detail-description', service.description);
@@ -529,7 +543,8 @@ if (isPublicServiceDetail) {
       setImage('.service-showcase-detail:nth-of-type(3) figure img', service.detail3_image, service.detail3_title);
       setImage('.service-showcase-feature figure img', service.feature_image, service.feature_title);
       setImage('.service-website-card img', service.website_image, service.title);
-    } catch (error) { document.querySelector('main').innerHTML = '<section class="project-empty-state"><p>Service unavailable right now.</p></section>'; console.error(error); }
+      revealDbContent(document.querySelector('.service-detail-page main'));
+    } catch (error) { document.querySelector('main').innerHTML = '<section class="project-empty-state"><p>Service unavailable right now.</p></section>'; revealDbContent(document.querySelector('.service-detail-page main')); console.error(error); }
   };
   renderServiceDetail();
 }
@@ -545,6 +560,7 @@ if (isPublicJournalArticle) {
       const post = posts[0];
       if (!post) {
         document.querySelector('main').innerHTML = '<section class="journal-empty-state"><p>This journal article is not published.</p></section>';
+        revealDbContent(document.querySelector('.journal-article-page main'));
         return;
       }
       const setText = (selector, value) => { const element = document.querySelector(selector); if (element) element.textContent = value || ''; };
@@ -558,8 +574,10 @@ if (isPublicJournalArticle) {
       if (cover && post.cover_image_url) cover.innerHTML = /\.(mp4|webm|mov|m4v)(\?|#|$)/i.test(post.cover_image_url) ? `<video src="${post.cover_image_url}" autoplay muted loop playsinline></video>` : `<img src="${post.cover_image_url}" alt="${post.title || ''}" />`;
       const authorImage = document.querySelector('.journal-author img'); if (authorImage && post.author_image_url) authorImage.src = post.author_image_url;
       const copy = document.querySelector('.journal-article-copy'); if (copy) copy.innerHTML = post.content_html || '';
+      revealDbContent(document.querySelector('.journal-article-page main'));
     } catch (error) {
       document.querySelector('main').innerHTML = '<section class="journal-empty-state"><p>Journal article unavailable right now.</p></section>';
+      revealDbContent(document.querySelector('.journal-article-page main'));
       console.error(error);
     }
   };
