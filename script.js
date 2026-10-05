@@ -1,23 +1,56 @@
 const initSmoothScroll = () => {
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || typeof Lenis === 'undefined') return;
+  let current = window.scrollY;
+  let target = current;
+  let frame = null;
+  let lastTime = performance.now();
 
-  const lenis = new Lenis({
-    anchors: true,
-    autoRaf: false,
-    duration: 1.15,
-    smoothWheel: true,
-    syncTouch: false,
-    wheelMultiplier: 0.9
-  });
+  const getLimit = () => Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+  const clamp = (value) => Math.min(getLimit(), Math.max(0, value));
+  const isNativeScrollTarget = (element) => element?.closest?.('input, textarea, select, [contenteditable="true"], [data-lenis-prevent]');
 
-  window.projectskevvLenis = lenis;
+  const render = (time) => {
+    const delta = Math.min(64, time - lastTime);
+    lastTime = time;
+    const smoothing = 1 - Math.exp(-delta / 420);
+    current += (target - current) * smoothing;
 
-  const raf = (time) => {
-    lenis.raf(time);
-    window.requestAnimationFrame(raf);
+    if (Math.abs(target - current) < 0.15) {
+      current = target;
+      frame = null;
+    } else {
+      frame = window.requestAnimationFrame(render);
+    }
+
+    window.scrollTo(0, current);
   };
 
-  window.requestAnimationFrame(raf);
+  const start = () => {
+    if (frame !== null) return;
+    lastTime = performance.now();
+    frame = window.requestAnimationFrame(render);
+  };
+
+  window.addEventListener('wheel', (event) => {
+    if (event.ctrlKey || isNativeScrollTarget(event.target)) return;
+    event.preventDefault();
+    current = window.scrollY;
+    target = clamp(target + event.deltaY * 0.92);
+    start();
+  }, { passive: false });
+
+  window.addEventListener('scroll', () => {
+    if (frame === null) {
+      current = window.scrollY;
+      target = current;
+    }
+  }, { passive: true });
+
+  window.projectskevvLenis = {
+    scrollTo: (value) => {
+      target = typeof value === 'number' ? clamp(value) : clamp(document.querySelector(value)?.offsetTop || 0);
+      start();
+    }
+  };
 };
 
 initSmoothScroll();
@@ -588,9 +621,46 @@ const hero = document.querySelector('.hero-container');
 const background = document.querySelector('.background-wrapper img');
 const siteHeader = document.querySelector('.site-header');
 
+const initHeroRipple = () => {
+  if (!hero || !background || typeof window.jQuery === 'undefined' || !window.jQuery.fn.ripples) return;
+
+  const surface = window.jQuery('.background-wrapper');
+  const imageSource = background.currentSrc || background.src;
+  surface.css({
+    backgroundImage: `url("${imageSource}")`,
+    backgroundPosition: 'center',
+    backgroundRepeat: 'no-repeat',
+    backgroundSize: 'cover'
+  });
+  background.style.display = '';
+
+  try {
+    surface.ripples({
+      crossOrigin: 'anonymous',
+      resolution: 512,
+      dropRadius: 20,
+      imageUrl: imageSource,
+      perturbance: 0.04,
+      interactive: true
+    });
+  } catch (error) {
+    console.warn('Hero ripple effect could not be initialized.', error);
+  }
+};
+
+initHeroRipple();
+
 const serviceRoutes = {
   branding: './branding/index.html'
 };
+
+const initTheme = () => {
+  let savedTheme = 'dark';
+  try { savedTheme = localStorage.getItem('projectskevv-theme') || 'dark'; } catch (error) { /* Storage can be unavailable in private contexts. */ }
+  document.body.dataset.theme = savedTheme === 'dark' ? 'dark' : 'light';
+};
+
+initTheme();
 
 document.querySelectorAll('.services-page .service-item').forEach((serviceItem) => {
   const serviceName = serviceItem.querySelector('.service-name')?.textContent.trim().toLowerCase();
@@ -599,6 +669,25 @@ document.querySelectorAll('.services-page .service-item').forEach((serviceItem) 
 
 if (siteHeader) {
   const desktopNav = siteHeader.querySelector('.site-nav');
+  const themeButton = document.createElement('button');
+  themeButton.className = 'theme-toggle';
+  themeButton.type = 'button';
+  themeButton.setAttribute('aria-label', 'Switch to dark mode');
+  themeButton.innerHTML = '<span class="theme-toggle-icon" aria-hidden="true">◐</span><span class="theme-toggle-label">DARK</span>';
+  siteHeader.appendChild(themeButton);
+
+  const setTheme = (theme) => {
+    const isDark = theme === 'dark';
+    document.body.dataset.theme = isDark ? 'dark' : 'light';
+    themeButton.setAttribute('aria-label', isDark ? 'Switch to light mode' : 'Switch to dark mode');
+    themeButton.querySelector('.theme-toggle-icon').textContent = isDark ? '◑' : '◐';
+    themeButton.querySelector('.theme-toggle-label').textContent = isDark ? 'LIGHT' : 'DARK';
+    try { localStorage.setItem('projectskevv-theme', isDark ? 'dark' : 'light'); } catch (error) { /* Storage can be unavailable in private contexts. */ }
+  };
+
+  setTheme(document.body.dataset.theme);
+  themeButton.addEventListener('click', () => setTheme(document.body.dataset.theme === 'dark' ? 'light' : 'dark'));
+
   const menuButton = document.createElement('button');
   menuButton.className = 'mobile-menu-toggle';
   menuButton.type = 'button';
