@@ -1329,12 +1329,15 @@ section.framer-1oykw2t {
 .services-section .service-item:hover .service-action .arrow-icon { transform: translateX(8px); }
 
 @media (max-width: 760px) {
-  .services-section .services-list { padding-bottom: 8vh; }
+  #services { min-height: auto; overflow: visible; }
+  .services-section .services-content-container,
+  .services-section .services-list { overflow: visible; }
+  .services-section .services-list { padding-bottom: 38vh; position: relative; }
   .services-section .service-item {
-    height: 68svh;
-    margin-bottom: 12vh;
+    height: calc(100svh - 124px);
+    margin-bottom: 24vh;
     max-height: none;
-    min-height: 430px;
+    min-height: 420px;
     top: 82px;
     width: 100%;
   }

@@ -3,6 +3,10 @@ const initSmoothScroll = () => {
   let target = current;
   let frame = null;
   let lastTime = performance.now();
+  let touchY = null;
+  let lastTouchY = null;
+  let touchVelocity = 0;
+  let lastTouchTime = 0;
 
   const getLimit = () => Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
   const clamp = (value) => Math.min(getLimit(), Math.max(0, value));
@@ -37,6 +41,39 @@ const initSmoothScroll = () => {
     target = clamp(target + event.deltaY * 0.92);
     start();
   }, { passive: false });
+
+  window.addEventListener('touchstart', (event) => {
+    if (isNativeScrollTarget(event.target) || !event.touches.length) return;
+    touchY = event.touches[0].clientY;
+    lastTouchY = touchY;
+    touchVelocity = 0;
+    lastTouchTime = performance.now();
+    current = window.scrollY;
+    target = current;
+  }, { passive: true });
+
+  window.addEventListener('touchmove', (event) => {
+    if (touchY === null || isNativeScrollTarget(event.target) || !event.touches.length) return;
+    const nextY = event.touches[0].clientY;
+    const now = performance.now();
+    const elapsed = Math.max(1, now - lastTouchTime);
+    const movement = lastTouchY - nextY;
+    touchVelocity = movement / elapsed;
+    lastTouchY = nextY;
+    lastTouchTime = now;
+    target = clamp(target + movement);
+    event.preventDefault();
+    start();
+  }, { passive: false });
+
+  window.addEventListener('touchend', () => {
+    if (touchY === null) return;
+    target = clamp(target + touchVelocity * 180);
+    touchY = null;
+    lastTouchY = null;
+    touchVelocity = 0;
+    start();
+  }, { passive: true });
 
   window.addEventListener('scroll', () => {
     if (frame === null) {
