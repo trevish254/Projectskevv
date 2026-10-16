@@ -587,7 +587,7 @@ if (isPublicProjectDetail) {
       setText('.project-detail-title-wrap h1', (project.title || 'Untitled project').toUpperCase());
       setText('.project-detail-description', project.description);
       const overview = document.querySelector('.project-summary');
-      if (overview) overview.textContent = project.description || '';
+      if (overview) overview.textContent = project.body_text || '';
       const overviewMedia = document.querySelector('.project-overview-media img');
       if (overviewMedia) {
         overviewMedia.src = project.overview_image_url || '';
@@ -1372,7 +1372,7 @@ if (cmsPreview) {
     if (title) title.textContent = (project.title || 'Untitled project').toUpperCase();
     if (description) description.textContent = project.description || 'Add a project description.';
     if (website) website.href = project.website || '#';
-    if (summary) summary.textContent = project.description || 'Add a project overview.';
+    if (summary) summary.textContent = project.text || 'Add a project overview.';
     if (overviewMedia) {
       overviewMedia.src = project.overviewImage || '';
       overviewMedia.closest('figure').hidden = !project.overviewImage;
@@ -2351,7 +2351,7 @@ if (cmsPreview) {
                     : textTarget.closest('.journal-article-copy') ? 'content'
             : textTarget.matches('#service-title, .project-detail-title-wrap h1') ? 'title'
             : textTarget.matches('.project-detail-description') ? 'description'
-            : textTarget.matches('.project-summary') ? 'description'
+            : textTarget.matches('.project-summary') ? 'text'
               : textTarget.matches('.project-insight-copy') ? 'text'
               : textTarget.matches('#service-showcase-title') ? 'applicationTitle'
                 : textTarget.matches('.service-showcase-intro > p') ? 'applicationDescription'

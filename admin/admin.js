@@ -485,7 +485,7 @@ if (page.label === 'Projects') {
     if (title) title.textContent = (project.title || 'Untitled project').toUpperCase();
     if (description) description.textContent = project.description || 'Add a project description.';
     if (website) website.href = project.website || '#';
-    if (summary) summary.textContent = project.description || 'Add a project overview.';
+    if (summary) summary.textContent = project.text || 'Add a project overview.';
     if (overviewMedia) {
       overviewMedia.src = project.overviewImage || '';
       overviewMedia.closest('figure').hidden = !project.overviewImage;
