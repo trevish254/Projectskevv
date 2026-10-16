@@ -68,6 +68,23 @@ const adminAuthReady = new Promise((resolve) => {
 });
 window.projectskevvAdminAuthReady = adminAuthReady;
 
+const saveCmsRecord = async (table, record) => {
+  await adminAuthReady;
+  const accessToken = window.projectskevvAdminAccessToken || adminSupabasePublishableKey;
+  const response = await fetch(`${adminSupabaseUrl}/rest/v1/${table}?on_conflict=id`, {
+    method: 'POST',
+    headers: {
+      apikey: adminSupabasePublishableKey,
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+      Prefer: 'resolution=merge-duplicates,return=minimal'
+    },
+    body: JSON.stringify(record)
+  });
+  if (!response.ok) throw new Error(await readSupabaseError(response));
+};
+
+
 const cmsPages = {
   home: { label: 'Home', source: '../index.html' },
   services: { label: 'Services', source: '../services/index.html' },
@@ -494,20 +511,36 @@ if (page.label === 'Projects') {
       renderProjectOptions();
       renderProjectForm();
     });
-    projectManager.querySelector('[data-project-form]').addEventListener('submit', (event) => {
+    projectManager.querySelector('[data-project-form]').addEventListener('submit', async (event) => {
       event.preventDefault();
+      const form = event.currentTarget;
+      const saveButton = form.querySelector('[type="submit"]');
+      const notice = form.querySelector('.cms-project-notice');
       const slug = String(project.slug || project.title || 'new-project').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
       project.slug = slug || `project-${Date.now()}`;
       project.id = project.id || project.slug;
-      if (draftProject) {
-        projects.push({ ...project, id: project.id });
-        activeProjectId = project.id;
-        draftProject = null;
+      const status = String(project.status || 'Draft').toLowerCase();
+      const databaseRecord = {
+        id: String(project.id), title: project.title || 'Untitled project', slug: project.slug,
+        status: status === 'live' || status === 'published' ? 'published' : status === 'archived' ? 'archived' : 'draft',
+        description: project.description || '', body_text: project.text || '', cover_image_url: project.image || null,
+        tag: project.tag || '', duration: project.duration || '', client: project.client || '',
+        website_url: project.website || null, gallery_urls: (project.gallery || []).filter(Boolean),
+        video_url: project.useVideo ? project.videoFile || null : null, video_poster_url: project.videoPoster || null
+      };
+      saveButton.disabled = true;
+      notice.textContent = 'Saving to database…';
+      try {
+        await saveCmsRecord('project_posts', databaseRecord);
+        if (draftProject) { projects.push({ ...project, id: project.id }); activeProjectId = project.id; draftProject = null; }
+        projectPreviewMode = true;
+        renderProjectOptions();
+        renderProjectForm('Saved to database');
+      } catch (error) {
+        saveButton.disabled = false;
+        notice.textContent = `Database save failed: ${error.message}`;
+        console.error('Unable to save Supabase project', error);
       }
-      saveProjects();
-      projectPreviewMode = true;
-      renderProjectOptions();
-      renderProjectForm('Saved locally');
     });
   };
 
@@ -705,7 +738,40 @@ if (page.label === 'Services') {
     const previewToggle = serviceManager.querySelector('[data-service-preview-toggle]');
     previewToggle.addEventListener('click', () => { serviceManager.classList.toggle('is-previewing'); previewToggle.textContent = serviceManager.classList.contains('is-previewing') ? 'Edit fields' : 'Preview'; updateServicePreview(); });
     serviceManager.querySelector('[data-service-cancel]').addEventListener('click', () => { draftService = null; activeServiceId = services[0]?.id || null; renderServiceOptions(); renderServiceForm(); });
-    serviceManager.querySelector('[data-service-form]').addEventListener('submit', (event) => { event.preventDefault(); service.slug = String(service.slug || service.title || 'new-service').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || `service-${Date.now()}`; service.id = service.id || service.slug; if (draftService) { services.push({ ...service }); activeServiceId = service.id; draftService = null; } saveServices(); renderServiceOptions(); renderServiceForm('Saved locally'); serviceManager.classList.add('is-previewing'); });
+    serviceManager.querySelector('[data-service-form]').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const form = event.currentTarget;
+      const saveButton = form.querySelector('[type="submit"]');
+      const notice = form.querySelector('.cms-project-notice');
+      service.slug = String(service.slug || service.title || 'new-service').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || `service-${Date.now()}`;
+      service.id = service.id || service.slug;
+      const status = String(service.status || 'Draft').toLowerCase();
+      const databaseRecord = {
+        id: String(service.id), title: service.title || 'Untitled service', slug: service.slug,
+        status: status === 'live' || status === 'published' ? 'published' : status === 'archived' ? 'archived' : 'draft',
+        description: service.description || '', scope: service.scope || '', timeline: service.timeline || '', image: service.image || null,
+        application_title: service.applicationTitle || '', application_description: service.applicationDescription || '',
+        application_visuals: service.applicationVisuals || [], detail1_title: service.detail1Title || '',
+        detail1_description: service.detail1Description || '', detail1_image: service.detail1Image || null,
+        detail2_title: service.detail2Title || '', detail2_description: service.detail2Description || '', detail2_image: service.detail2Image || null,
+        detail3_title: service.detail3Title || '', detail3_description: service.detail3Description || '', detail3_image: service.detail3Image || null,
+        feature_title: service.featureTitle || '', feature_text: service.featureText || '',
+        feature_image: service.featureImage || null, website_image: service.websiteImage || null
+      };
+      saveButton.disabled = true;
+      notice.textContent = 'Saving to database…';
+      try {
+        await saveCmsRecord('service_posts', databaseRecord);
+        if (draftService) { services.push({ ...service }); activeServiceId = service.id; draftService = null; }
+        renderServiceOptions();
+        renderServiceForm('Saved to database');
+        serviceManager.classList.add('is-previewing');
+      } catch (error) {
+        saveButton.disabled = false;
+        notice.textContent = `Database save failed: ${error.message}`;
+        console.error('Unable to save Supabase service', error);
+      }
+    });
     updateServicePreview();
   };
   serviceTools.hidden = false;
