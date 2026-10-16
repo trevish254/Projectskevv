@@ -191,22 +191,46 @@ window.projectskevvDb = createSupabaseRestClient({
 
 const isHomepage = Boolean(document.querySelector('.hero-container'));
 let homepagePricingSettings = null;
-const isHomepageLockedMedia = (media) => Boolean(media.closest('.mission-scroll, .footer-services, [class*="projects"], [class*="services"], [class*="journal"], a[href*="projects"], a[href*="services"], a[href*="journal"]'));
+const homepageCustomMediaSelector = '.menu-grid-section [data-home-media-key], .swatch-showcase [data-home-media-key]';
+const isHomepageLockedMedia = (media) => {
+  if (isHomepage && media.matches(homepageCustomMediaSelector)) return false;
+  return Boolean(media.closest('.mission-scroll, .footer-services, [class*="projects"], [class*="services"], [class*="journal"], a[href*="projects"], a[href*="services"], a[href*="journal"]'));
+};
 const homepageMediaKey = (media) => {
   if (!media) return '';
   if (media.dataset.homeMediaKey) return media.dataset.homeMediaKey;
   if (!media.dataset.homeMediaKey) {
-    const editableMedia = [...document.querySelectorAll('main img, main video')].filter((item) => !isHomepageLockedMedia(item));
+    const editableMedia = [...document.querySelectorAll('main img, main video')].filter((item) => !String(item.dataset.homeMediaKey || '').startsWith('home-service-') && !isHomepageLockedMedia(item));
     media.dataset.homeMediaKey = `home-media-${Math.max(0, editableMedia.indexOf(media)) + 1}`;
   }
   return media.dataset.homeMediaKey;
 };
-const homepageMediaElements = () => [...document.querySelectorAll('main img, main video')].filter((media) => !isHomepageLockedMedia(media));
+const homepageMediaElements = () => [...new Set([
+  ...document.querySelectorAll('main img, main video'),
+  ...document.querySelectorAll(homepageCustomMediaSelector)
+])].filter((media) => !isHomepageLockedMedia(media));
+const setCmsMediaSource = (media, source) => {
+  if (media.matches('.menu-grid-thumbs i')) {
+    media.style.setProperty('--thumb', `url("${source.replace(/["\\]/g, '\\$&')}")`);
+    media.dataset.cmsMediaUrl = source;
+    return;
+  }
+  if (media.matches('.swa-panel')) {
+    media.style.setProperty('--swa-image', `url("${source.replace(/["\\]/g, '\\$&')}")`);
+    media.dataset.cmsMediaUrl = source;
+    return;
+  }
+  media.src = source;
+};
 const applyHomepageMedia = (key, source) => {
   const matchingMedia = homepageMediaElements().filter((media) => homepageMediaKey(media) === key);
   if (!matchingMedia.length || !source) return;
   const isVideo = /\.(mp4|webm|ogg|mov|m4v)(?:[?#].*)?$/i.test(source);
   matchingMedia.forEach((current) => {
+    if (current.matches('.menu-grid-thumbs i, .swa-panel')) {
+      setCmsMediaSource(current, source);
+      return;
+    }
     const currentIsVideo = current.tagName.toLowerCase() === 'video';
     let media = current;
     if (isVideo !== currentIsVideo) {
@@ -1364,7 +1388,7 @@ if (cmsPreview) {
   const cmsEditableSelector = [
     'header', 'main > section', 'main > section > *', 'footer', 'footer > *',
     'section', 'article', 'aside', 'figure', 'form',
-    'h1', 'h2', 'h3', 'h4', 'p', 'a', 'button', 'img',
+    'h1', 'h2', 'h3', 'h4', 'p', 'a', 'button', 'img', '.menu-grid-thumbs i[data-home-media-key]',
     '[class*="card"]', '[class*="item"]', '[class*="tile"]', '[class*="panel"]', '[class*="container"]'
   ].join(', ');
   const cmsEditorStyle = document.createElement('style');
@@ -1467,7 +1491,7 @@ if (cmsPreview) {
     element.dataset.editorLabel = cmsEditorLabel(element);
   });
 
-  const cmsLockedMedia = (element) => isLegalPage ? false : Boolean(element.closest('.mission-scroll, .footer-services, [class*="projects"], [class*="services"], [class*="journal"], a[href*="projects"], a[href*="services"], a[href*="journal"]'));
+  const cmsLockedMedia = (element) => isHomepage && element.matches(homepageCustomMediaSelector) ? false : isLegalPage ? false : Boolean(element.closest('.mission-scroll, .footer-services, [class*="projects"], [class*="services"], [class*="journal"], a[href*="projects"], a[href*="services"], a[href*="journal"]'));
   const cmsLockedContent = (element) => isLegalPage ? false : Boolean(element.closest('#projects, #services, #journal, .featured-project, .footer-services, [class*="projects"], [class*="services"], [class*="journal"], a[href*="projects"], a[href*="services"], a[href*="journal"]'));
   const cmsTextSelector = 'h1, h2, h3, h4, h5, h6, p, span, a, button, li, label, summary, dd';
   const cmsMediaEditor = document.createElement('aside');
@@ -1481,7 +1505,7 @@ if (cmsPreview) {
     <p class="cms-media-editor-name" data-cms-media-name></p>
     <label class="cms-media-file">Choose image or video<input type="file" accept="image/*,video/*" data-cms-media-file /></label>
     <div class="cms-media-url-row"><input type="url" placeholder="Paste media URL" data-cms-media-url /><button type="button" data-cms-media-apply>Apply</button></div>
-    <small>Paste a URL, then use Publish in the CMS bar to save it.</small>
+    <small data-cms-media-status>Paste a URL, then use Publish in the CMS bar to save it.</small>
   `;
   document.body.appendChild(cmsMediaEditor);
 
@@ -1538,6 +1562,36 @@ if (cmsPreview) {
   const cmsMediaUrl = cmsMediaEditor.querySelector('[data-cms-media-url]');
   const cmsMediaApply = cmsMediaEditor.querySelector('[data-cms-media-apply]');
   const cmsMediaClose = cmsMediaEditor.querySelector('[data-cms-media-close]');
+  const cmsMediaStatus = cmsMediaEditor.querySelector('[data-cms-media-status]');
+  const cmsMediaSource = (media) => {
+    if (media.dataset.cmsMediaUrl) return media.dataset.cmsMediaUrl;
+    const property = media.matches('.menu-grid-thumbs i') ? '--thumb' : media.matches('.swa-panel') ? '--swa-image' : '';
+    if (!property) return media.currentSrc || media.src || '';
+    const value = media.style.getPropertyValue(property).trim();
+    const match = value.match(/^url\(["']?(.*?)["']?\)$/i);
+    return match?.[1] || '';
+  };
+  const uploadCmsHomeImage = async (file, id) => {
+    const allowedTypes = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif']);
+    if (!allowedTypes.has(file.type)) throw new Error('Choose a JPG, PNG, WebP, GIF, or AVIF image.');
+    if (file.size > 15 * 1024 * 1024) throw new Error('Images must be 15 MB or smaller.');
+    const extension = file.name.split('.').pop().toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
+    const uniqueId = window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const objectPath = `home/${id}/${uniqueId}.${extension}`;
+    const encodedPath = objectPath.split('/').map(encodeURIComponent).join('/');
+    const response = await fetch(`${SUPABASE_URL}/storage/v1/object/projectskevv-media/${encodedPath}`, {
+      method: 'POST',
+      headers: { apikey: SUPABASE_PUBLISHABLE_KEY, Authorization: `Bearer ${SUPABASE_PUBLISHABLE_KEY}`, 'Content-Type': file.type, 'x-upsert': 'false' },
+      body: file
+    });
+    if (!response.ok) {
+      let details = await response.text();
+      try { details = JSON.parse(details).message || JSON.parse(details).error || details; } catch {}
+      if (/bucket.*not found|not found.*bucket/i.test(details)) throw new Error('The projectskevv-media bucket is missing. Run supabase/012_create_projectskevv_media_bucket.sql in Supabase first.');
+      throw new Error(details || `Upload failed (${response.status}).`);
+    }
+    return `${SUPABASE_URL}/storage/v1/object/public/projectskevv-media/${encodedPath}`;
+  };
 
   const openCmsMediaEditor = (media) => {
     if (cmsLockedMedia(media)) return;
@@ -1545,7 +1599,9 @@ if (cmsPreview) {
     cmsMediaEditorOpen = true;
     cmsMediaEditor.hidden = false;
     cmsMediaName.textContent = `${media.tagName.toLowerCase() === 'video' ? 'Video' : 'Image'} selected`;
-    cmsMediaUrl.value = media.currentSrc || media.src || '';
+    cmsMediaFile.accept = isHomepage ? 'image/jpeg,image/png,image/webp,image/gif,image/avif' : 'image/*,video/*';
+    cmsMediaUrl.value = cmsMediaSource(media);
+    cmsMediaStatus.textContent = isHomepage && media.matches(homepageCustomMediaSelector) ? 'Upload the image to Storage, then choose Publish to save it on Home.' : 'Paste a URL, then use Publish in the CMS bar to save it.';
     const bounds = media.getBoundingClientRect();
     const panelWidth = cmsMediaEditor.offsetWidth || 285;
     const panelHeight = cmsMediaEditor.offsetHeight || 180;
@@ -1563,6 +1619,13 @@ if (cmsPreview) {
   const applyCmsMedia = (source) => {
     if (!cmsActiveMedia || !source) return;
     const homeMediaId = isHomepage && !cmsLockedMedia(cmsActiveMedia) ? homepageMediaKey(cmsActiveMedia) : '';
+    if (homeMediaId && cmsActiveMedia.matches(homepageCustomMediaSelector)) {
+      setCmsMediaSource(cmsActiveMedia, source);
+      if (window.parent !== window) window.parent.postMessage({ source: 'projectskevv-cms-home', type: 'media-change', id: homeMediaId, value: source }, '*');
+      cmsMediaEditor.hidden = true;
+      cmsMediaEditorOpen = false;
+      return;
+    }
     if (cmsActiveObjectUrl) URL.revokeObjectURL(cmsActiveObjectUrl);
     cmsActiveObjectUrl = source;
     const sourceIsVideo = /\.(mp4|webm|ogg|mov)(?:[?#].*)?$/i.test(source);
@@ -1597,9 +1660,25 @@ if (cmsPreview) {
     cmsMediaEditorOpen = false;
   };
 
-  cmsMediaFile.addEventListener('change', () => {
+  cmsMediaFile.addEventListener('change', async () => {
     const file = cmsMediaFile.files?.[0];
     if (!file) return;
+    if (isHomepage && cmsActiveMedia && !cmsLockedMedia(cmsActiveMedia)) {
+      cmsMediaFile.disabled = true;
+      cmsMediaStatus.textContent = 'Uploading image to Supabase Storage…';
+      try {
+        const source = await uploadCmsHomeImage(file, homepageMediaKey(cmsActiveMedia));
+        applyCmsMedia(source);
+        cmsMediaStatus.textContent = 'Uploaded. Choose Publish in the CMS bar to save this image on Home.';
+      } catch (error) {
+        cmsMediaStatus.textContent = `Upload failed: ${error.message}`;
+        console.error('Unable to upload Home media', error);
+      } finally {
+        cmsMediaFile.disabled = false;
+        cmsMediaFile.value = '';
+      }
+      return;
+    }
     applyCmsMedia(URL.createObjectURL(file));
   });
   cmsMediaApply.addEventListener('click', () => applyCmsMedia(cmsMediaUrl.value.trim()));
@@ -2104,7 +2183,7 @@ if (cmsPreview) {
       openCmsHomeSettingsEditor();
       return;
     }
-    const media = event.target.closest?.('img, video');
+    const media = event.target.closest?.('img, video, .menu-grid-thumbs i[data-home-media-key], .swa-panel[data-home-media-key]');
     if (media && !cmsLockedMedia(media)) {
       event.preventDefault();
       event.stopPropagation();
