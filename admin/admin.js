@@ -360,6 +360,35 @@ if (page.label === 'Projects') {
     slug: 'beach-shoot',
     description: 'An abstract visual exploration where light, water, color dissolve into a single atmospheric form.',
     text: 'Explores the tension between light and darkness through a series of abstract beach captures.',
+    keyInsights: [
+      { subtitle: 'Student Context', text: 'Learners aged 8–15 lacked structured access to English practice and design tools but showed high motivation when content was hands-on and culturally relatable.' },
+      { subtitle: 'Mentor Needs', text: 'Volunteers needed a frictionless signup, clear onboarding, and simple scheduling tools to manage sessions across time zones.' },
+      { subtitle: 'Technical Constraints', text: 'Predominant mobile usage and variable internet speeds required lightweight pages, concise media, and offline-friendly components.' }
+    ],
+    overviewImage: 'https://framerusercontent.com/images/1828lmWV1X8KP4ehLRXfgbmTjMs.png?width=1349&height=2400',
+    designChallenge: {
+      title: 'Design Challenge',
+      prompt: 'How might we build a scalable, playful platform that:',
+      questions: [
+        'Onboards mentors quickly and securely, with minimal setup friction?',
+        'Guides students through intuitive, character-led lessons despite low digital literacy.',
+        'Facilitates scheduling and session management without heavy development resources?',
+        'Fosters an ongoing community and portfolio development in a no-code MVP environment?'
+      ],
+      images: [
+        'https://framerusercontent.com/images/1828lmWV1X8KP4ehLRXfgbmTjMs.png?width=1349&height=2400',
+        'https://framerusercontent.com/images/TEPq34U3DUtGaXdZtpGZFrtXlI.png?width=1800&height=2400'
+      ]
+    },
+    notableAchievements: {
+      title: 'Notable Achievements',
+      rows: [
+        { subtitle: 'Partnerships', text: 'Pilot involved two Phuket schools and twenty vetted volunteers, with marked improvements in student English performance. Two international schools joined to offer volunteering as part of their curricula.' },
+        { subtitle: 'Comprehensive Business Model', text: 'Adopted a freemium model: core features free, premium resources for partners. One-for-one merchandise sales fund student access.' },
+        { subtitle: 'MVP Deployment', text: 'Deployment ready by Summer 2025' }
+      ],
+      image: 'https://framerusercontent.com/images/TEPq34U3DUtGaXdZtpGZFrtXlI.png?width=1800&height=2400'
+    },
     image: 'https://framerusercontent.com/images/64pa4deJ9c4cc4c58vzW7N0WgU.jpg?width=3500&height=2333',
     tag: 'Art Direction / Photography',
     duration: '1 day',
@@ -383,10 +412,10 @@ if (page.label === 'Projects') {
 
   const loadProjects = async () => {
     try {
-      const response = await fetch(`${adminSupabaseUrl}/rest/v1/project_posts?select=id,title,slug,status,description,body_text,cover_image_url,tag,duration,client,website_url,gallery_urls,video_url,video_poster_url&order=created_at.desc`, { headers: { apikey: adminSupabasePublishableKey, Authorization: `Bearer ${adminSupabasePublishableKey}`, Accept: 'application/json' } });
+      const response = await fetch(`${adminSupabaseUrl}/rest/v1/project_posts?select=id,title,slug,status,description,body_text,key_insights,overview_image_url,design_challenge,notable_achievements,cover_image_url,tag,duration,client,website_url,gallery_urls,video_url,video_poster_url&order=created_at.desc`, { headers: { apikey: adminSupabasePublishableKey, Authorization: `Bearer ${adminSupabasePublishableKey}`, Accept: 'application/json' } });
       if (!response.ok) throw new Error(await response.text());
       const rows = await response.json();
-      projects.splice(0, projects.length, ...rows.map((row) => ({ id: row.id, title: row.title || '', status: row.status === 'published' ? 'Live' : row.status === 'archived' ? 'Archived' : 'Draft', slug: row.slug || '', description: row.description || '', text: row.body_text || '', image: row.cover_image_url || '', tag: row.tag || '', duration: row.duration || '', client: row.client || '', website: row.website_url || '', gallery: Array.isArray(row.gallery_urls) ? row.gallery_urls : [], useVideo: Boolean(row.video_url), videoPoster: row.video_poster_url || '', videoFile: row.video_url || '' })));
+      projects.splice(0, projects.length, ...rows.map((row) => ({ id: row.id, title: row.title || '', status: row.status === 'published' ? 'Live' : row.status === 'archived' ? 'Archived' : 'Draft', slug: row.slug || '', description: row.description || '', text: row.body_text || '', keyInsights: Array.isArray(row.key_insights) ? row.key_insights : [], overviewImage: row.overview_image_url || '', designChallenge: row.design_challenge && typeof row.design_challenge === 'object' ? row.design_challenge : {}, notableAchievements: row.notable_achievements && typeof row.notable_achievements === 'object' ? row.notable_achievements : {}, image: row.cover_image_url || '', tag: row.tag || '', duration: row.duration || '', client: row.client || '', website: row.website_url || '', gallery: Array.isArray(row.gallery_urls) ? row.gallery_urls : [], useVideo: Boolean(row.video_url), videoPoster: row.video_poster_url || '', videoFile: row.video_url || '' })));
       activeProjectId = projects[0]?.id || null;
       renderProjectOptions();
       renderProjectForm();
@@ -446,16 +475,59 @@ if (page.label === 'Projects') {
     const title = previewDocument.querySelector('.project-detail-title-wrap h1');
     const description = previewDocument.querySelector('.project-detail-description');
     const website = previewDocument.querySelector('.project-detail-button-primary');
-    const tag = previewDocument.querySelector('.meta-row .meta-label:nth-child(2)');
     const summary = previewDocument.querySelector('.project-summary');
+    const overviewMedia = previewDocument.querySelector('.project-overview-media img');
+    const challengeImages = [...previewDocument.querySelectorAll('.project-challenge-images img')];
+    const achievementsMedia = previewDocument.querySelector('.project-achievements-media img');
     const meta = [...previewDocument.querySelectorAll('.project-detail-meta dd')];
     const leadImage = previewDocument.querySelector('.project-detail-lead-image img');
     const gallery = previewDocument.querySelector('.image-gallery');
     if (title) title.textContent = (project.title || 'Untitled project').toUpperCase();
     if (description) description.textContent = project.description || 'Add a project description.';
     if (website) website.href = project.website || '#';
-    if (tag) tag.textContent = project.tag || 'Add tag';
-    if (summary) summary.textContent = project.text || 'Add project text.';
+    if (summary) summary.textContent = project.description || 'Add a project overview.';
+    if (overviewMedia) {
+      overviewMedia.src = project.overviewImage || '';
+      overviewMedia.closest('figure').hidden = !project.overviewImage;
+    }
+    const insightList = previewDocument.querySelector('.project-insight-list');
+    if (insightList && Array.isArray(project.keyInsights)) {
+      insightList.replaceChildren(...project.keyInsights.map((insight) => {
+        const row = previewDocument.createElement('div'); row.className = 'project-insight-item';
+        const subtitle = previewDocument.createElement('p'); subtitle.className = 'project-insight-title'; subtitle.textContent = insight.subtitle || '';
+        const copy = previewDocument.createElement('p'); copy.className = 'project-insight-copy'; copy.textContent = insight.text || '';
+        row.append(subtitle, copy); return row;
+      }));
+    }
+    const challenge = project.designChallenge || {};
+    const challengeTitle = previewDocument.querySelector('#project-challenge-title');
+    const challengePrompt = previewDocument.querySelector('.project-challenge-prompt');
+    const challengeQuestions = previewDocument.querySelector('.project-challenge-questions');
+    if (challengeTitle) {
+      const [firstWord, ...remainingWords] = String(challenge.title || 'Design Challenge').split(' ');
+      challengeTitle.replaceChildren(previewDocument.createTextNode(firstWord));
+      if (remainingWords.length) challengeTitle.append(previewDocument.createElement('br'), previewDocument.createTextNode(remainingWords.join(' ')));
+    }
+    if (challengePrompt) challengePrompt.textContent = challenge.prompt || '';
+    if (challengeQuestions) challengeQuestions.replaceChildren(...(Array.isArray(challenge.questions) ? challenge.questions : []).map((question) => {
+      const item = previewDocument.createElement('li'); item.textContent = question || ''; return item;
+    }));
+    challengeImages.forEach((image, index) => { image.src = challenge.images?.[index] || ''; image.closest('figure').hidden = !challenge.images?.[index]; });
+    const achievements = project.notableAchievements || {};
+    const achievementsTitle = previewDocument.querySelector('#project-achievements-title');
+    const achievementRows = previewDocument.querySelector('.project-achievement-rows');
+    if (achievementsTitle) {
+      const [firstWord, ...remainingWords] = String(achievements.title || 'Notable Achievements').split(' ');
+      achievementsTitle.replaceChildren(previewDocument.createTextNode(firstWord));
+      if (remainingWords.length) achievementsTitle.append(previewDocument.createElement('br'), previewDocument.createTextNode(remainingWords.join(' ')));
+    }
+    if (achievementRows) achievementRows.replaceChildren(...(Array.isArray(achievements.rows) ? achievements.rows : []).map((achievement) => {
+      const row = previewDocument.createElement('div'); row.className = 'project-achievement-row';
+      const subtitle = previewDocument.createElement('p'); subtitle.className = 'project-achievement-name'; subtitle.textContent = achievement.subtitle || '';
+      const copy = previewDocument.createElement('p'); copy.textContent = achievement.text || '';
+      row.append(subtitle, copy); return row;
+    }));
+    if (achievementsMedia) { achievementsMedia.src = achievements.image || ''; achievementsMedia.closest('figure').hidden = !achievements.image; }
     if (meta[0]) meta[0].textContent = project.duration || 'Add duration';
     if (meta[1]) meta[1].textContent = project.client || 'Add client';
     const leadContainer = previewDocument.querySelector('.project-detail-lead-image');
@@ -504,6 +576,10 @@ if (page.label === 'Projects') {
           <div class="cms-project-field"><label for="project-slug">Slug</label><input id="project-slug" data-field="slug" value="" required /></div>
           <div class="cms-project-field"><label for="project-description">Description</label><textarea id="project-description" data-field="description"></textarea></div>
           <div class="cms-project-field"><label for="project-text">Text</label><textarea id="project-text" data-field="text"></textarea></div>
+          <div class="cms-project-field"><label>Key insights</label><div class="cms-project-gallery-list" data-key-insights-list></div><button class="cms-project-add-image" type="button" data-key-insight-add>+ Add insight</button><p class="cms-project-hint">Each insight has a subtitle and supporting text.</p></div>
+          <div class="cms-project-field"><label for="project-overview-image">Large image below key insights</label><div class="cms-project-media-control"><div class="cms-project-image-preview" data-overview-image-preview><span>No image yet</span></div><input id="project-overview-image" type="url" data-field="overviewImage" placeholder="Paste image URL" /><p class="cms-project-hint">Upload or paste the large project image shown below key insights.</p></div></div>
+          <div class="cms-project-field"><label>Design challenge</label><div class="cms-project-design-challenge"><input type="text" data-design-challenge-title placeholder="Section heading" /><textarea data-design-challenge-prompt placeholder="Challenge introduction"></textarea><div data-design-challenge-questions></div><button class="cms-project-add-image" type="button" data-design-challenge-add>+ Add numbered item</button><p class="cms-project-hint">Manage the prompt and numbered challenge questions.</p><div class="cms-project-design-challenge-images" data-design-challenge-images></div></div></div>
+          <div class="cms-project-field"><label>Notable achievements</label><div class="cms-project-design-challenge"><input type="text" data-achievements-title placeholder="Section heading" /><div data-achievement-rows></div><button class="cms-project-add-image" type="button" data-achievement-add>+ Add achievement</button><p class="cms-project-hint">Each row has a subtitle and supporting text.</p><div class="cms-project-challenge-image"><label>Image below achievements</label><div class="cms-project-image-preview" data-achievements-image-preview><span>No image yet</span></div><input type="url" data-achievements-image placeholder="Paste image URL" /></div></div></div>
         <div class="cms-project-field"><label for="project-image">Main Image / Thumb</label><div class="cms-project-media-control"><div class="cms-project-image-preview" data-main-image-preview><span>No image yet</span></div><input id="project-image" type="url" data-field="image" placeholder="Paste image, GIF, or video URL" /><p class="cms-project-hint">Upload JPG, PNG, WebP, GIF, or AVIF images up to 15 MB, or paste a hosted video URL.</p></div></div>
           <div class="cms-project-field"><label for="project-tag">Tag</label><input id="project-tag" data-field="tag" /></div>
           <div class="cms-project-field"><label for="project-duration">Duration</label><input id="project-duration" data-field="duration" /></div>
@@ -533,6 +609,103 @@ if (page.label === 'Projects') {
       mainImageField.value = urls[0];
       mainImageField.dispatchEvent(new Event('input', { bubbles: true }));
     });
+    const overviewImageField = projectManager.querySelector('[data-field="overviewImage"]');
+    const overviewImagePreview = projectManager.querySelector('[data-overview-image-preview]');
+    if (overviewImageField && overviewImagePreview) {
+      renderMediaPreview(overviewImagePreview, project.overviewImage, 'Project overview image preview');
+      addCmsImageUploader(overviewImageField, `projects/${project.slug || project.id || project.title}/overview`, (urls) => {
+        overviewImageField.value = urls[0];
+        overviewImageField.dispatchEvent(new Event('input', { bubbles: true }));
+      });
+      overviewImageField.addEventListener('input', () => renderMediaPreview(overviewImagePreview, overviewImageField.value, 'Project overview image preview'));
+    }
+    const insightFields = projectManager.querySelector('[data-key-insights-list]');
+    project.keyInsights = Array.isArray(project.keyInsights) ? project.keyInsights : [];
+    const renderInsightFields = () => {
+      insightFields.innerHTML = '';
+      project.keyInsights.forEach((insight, index) => {
+        const row = document.createElement('div'); row.className = 'cms-project-gallery-row cms-project-insight-row';
+        row.innerHTML = `<input type="text" placeholder="Subtitle" aria-label="Insight ${index + 1} subtitle" /><textarea placeholder="Insight text" aria-label="Insight ${index + 1} text"></textarea><button class="cms-project-gallery-remove" type="button">Remove</button>`;
+        const [subtitle, text] = row.querySelectorAll('input, textarea');
+        subtitle.value = insight.subtitle || ''; text.value = insight.text || '';
+        const syncInsight = () => { project.keyInsights[index] = { subtitle: subtitle.value, text: text.value }; updateProjectLivePreview(); };
+        subtitle.addEventListener('input', syncInsight); text.addEventListener('input', syncInsight);
+        row.querySelector('button').addEventListener('click', () => { project.keyInsights.splice(index, 1); renderInsightFields(); updateProjectLivePreview(); });
+        insightFields.appendChild(row);
+      });
+    };
+    projectManager.querySelector('[data-key-insight-add]').addEventListener('click', () => { project.keyInsights.push({ subtitle: '', text: '' }); renderInsightFields(); updateProjectLivePreview(); });
+    renderInsightFields();
+    project.designChallenge = project.designChallenge && typeof project.designChallenge === 'object' ? project.designChallenge : {};
+    project.designChallenge.title ||= 'Design Challenge';
+    project.designChallenge.prompt ||= '';
+    project.designChallenge.questions = Array.isArray(project.designChallenge.questions) ? project.designChallenge.questions : [];
+    project.designChallenge.images = Array.isArray(project.designChallenge.images) ? project.designChallenge.images.slice(0, 2) : [];
+    while (project.designChallenge.images.length < 2) project.designChallenge.images.push('');
+    const challengeTitleField = projectManager.querySelector('[data-design-challenge-title]');
+    const challengePromptField = projectManager.querySelector('[data-design-challenge-prompt]');
+    challengeTitleField.value = project.designChallenge.title;
+    challengePromptField.value = project.designChallenge.prompt;
+    const renderChallengeQuestions = () => {
+      const list = projectManager.querySelector('[data-design-challenge-questions]');
+      list.innerHTML = '';
+      project.designChallenge.questions.forEach((question, index) => {
+        const row = document.createElement('div'); row.className = 'cms-project-gallery-row cms-project-challenge-row';
+        row.innerHTML = `<span class="cms-project-challenge-number">${index + 1}.</span><textarea placeholder="Challenge item" aria-label="Design challenge item ${index + 1}"></textarea><button class="cms-project-gallery-remove" type="button">Remove</button>`;
+        const textarea = row.querySelector('textarea'); textarea.value = question || '';
+        textarea.addEventListener('input', () => { project.designChallenge.questions[index] = textarea.value; updateProjectLivePreview(); });
+        row.querySelector('button').addEventListener('click', () => { project.designChallenge.questions.splice(index, 1); renderChallengeQuestions(); updateProjectLivePreview(); });
+        list.appendChild(row);
+      });
+    };
+    challengeTitleField.addEventListener('input', () => { project.designChallenge.title = challengeTitleField.value; updateProjectLivePreview(); });
+    challengePromptField.addEventListener('input', () => { project.designChallenge.prompt = challengePromptField.value; updateProjectLivePreview(); });
+    projectManager.querySelector('[data-design-challenge-add]').addEventListener('click', () => { project.designChallenge.questions.push(''); renderChallengeQuestions(); updateProjectLivePreview(); });
+    renderChallengeQuestions();
+    const challengeImageFields = projectManager.querySelector('[data-design-challenge-images]');
+    challengeImageFields.innerHTML = project.designChallenge.images.map((_, index) => `<div class="cms-project-challenge-image"><label>Design challenge image ${index + 1}</label><div class="cms-project-image-preview" data-challenge-image-preview="${index}"><span>No image yet</span></div><input type="url" data-challenge-image="${index}" placeholder="Paste image URL" /></div>`).join('');
+    challengeImageFields.querySelectorAll('[data-challenge-image]').forEach((field) => {
+      const index = Number(field.dataset.challengeImage);
+      const preview = challengeImageFields.querySelector(`[data-challenge-image-preview="${index}"]`);
+      field.value = project.designChallenge.images[index] || '';
+      renderMediaPreview(preview, field.value, `Design challenge image ${index + 1} preview`);
+      const syncChallengeImage = () => { project.designChallenge.images[index] = field.value.trim(); renderMediaPreview(preview, field.value.trim(), `Design challenge image ${index + 1} preview`); updateProjectLivePreview(); };
+      field.addEventListener('input', syncChallengeImage);
+      addCmsImageUploader(field, `projects/${project.slug || project.id || project.title}/design-challenge`, (urls) => { field.value = urls[0]; field.dispatchEvent(new Event('input', { bubbles: true })); });
+    });
+    project.notableAchievements = project.notableAchievements && typeof project.notableAchievements === 'object' ? project.notableAchievements : {};
+    project.notableAchievements.title ||= 'Notable Achievements';
+    project.notableAchievements.rows = Array.isArray(project.notableAchievements.rows) ? project.notableAchievements.rows : [];
+    project.notableAchievements.image ||= '';
+    const achievementTitleField = projectManager.querySelector('[data-achievements-title]');
+    const achievementRowsField = projectManager.querySelector('[data-achievement-rows]');
+    achievementTitleField.value = project.notableAchievements.title;
+    const renderAchievementRows = () => {
+      achievementRowsField.innerHTML = '';
+      project.notableAchievements.rows.forEach((achievement, index) => {
+        const row = document.createElement('div'); row.className = 'cms-project-gallery-row cms-project-insight-row';
+        row.innerHTML = `<input type="text" placeholder="Subtitle" aria-label="Achievement ${index + 1} subtitle" /><textarea placeholder="Achievement text" aria-label="Achievement ${index + 1} text"></textarea><button class="cms-project-gallery-remove" type="button">Remove</button>`;
+        const [subtitle, text] = row.querySelectorAll('input, textarea');
+        subtitle.value = achievement.subtitle || ''; text.value = achievement.text || '';
+        const sync = () => { project.notableAchievements.rows[index] = { subtitle: subtitle.value, text: text.value }; updateProjectLivePreview(); };
+        subtitle.addEventListener('input', sync); text.addEventListener('input', sync);
+        row.querySelector('button').addEventListener('click', () => { project.notableAchievements.rows.splice(index, 1); renderAchievementRows(); updateProjectLivePreview(); });
+        achievementRowsField.appendChild(row);
+      });
+    };
+    achievementTitleField.addEventListener('input', () => { project.notableAchievements.title = achievementTitleField.value; updateProjectLivePreview(); });
+    projectManager.querySelector('[data-achievement-add]').addEventListener('click', () => { project.notableAchievements.rows.push({ subtitle: '', text: '' }); renderAchievementRows(); updateProjectLivePreview(); });
+    renderAchievementRows();
+    const achievementsImageField = projectManager.querySelector('[data-achievements-image]');
+    const achievementsImagePreview = projectManager.querySelector('[data-achievements-image-preview]');
+    achievementsImageField.value = project.notableAchievements.image;
+    renderMediaPreview(achievementsImagePreview, achievementsImageField.value, 'Notable achievements image preview');
+    achievementsImageField.addEventListener('input', () => {
+      project.notableAchievements.image = achievementsImageField.value.trim();
+      renderMediaPreview(achievementsImagePreview, achievementsImageField.value, 'Notable achievements image preview');
+      updateProjectLivePreview();
+    });
+    addCmsImageUploader(achievementsImageField, `projects/${project.slug || project.id || project.title}/achievements`, (urls) => { achievementsImageField.value = urls[0]; achievementsImageField.dispatchEvent(new Event('input', { bubbles: true })); });
     const galleryList = projectManager.querySelector('[data-gallery-list]');
     const renderGalleryFields = () => {
       galleryList.innerHTML = '';
@@ -595,6 +768,19 @@ if (page.label === 'Projects') {
         description: project.description || '', body_text: project.text || '', cover_image_url: project.image || null,
         tag: project.tag || '', duration: project.duration || '', client: project.client || '',
         website_url: project.website || null, gallery_urls: (project.gallery || []).filter(Boolean),
+        key_insights: Array.isArray(project.keyInsights) ? project.keyInsights.map(({ subtitle, text }) => ({ subtitle: String(subtitle || '').trim(), text: String(text || '').trim() })).filter((insight) => insight.subtitle || insight.text) : [],
+        overview_image_url: project.overviewImage || null,
+        design_challenge: {
+          title: String(project.designChallenge?.title || '').trim(),
+          prompt: String(project.designChallenge?.prompt || '').trim(),
+          questions: (project.designChallenge?.questions || []).map((question) => String(question || '').trim()).filter(Boolean),
+          images: (project.designChallenge?.images || []).map((url) => String(url || '').trim())
+        },
+        notable_achievements: {
+          title: String(project.notableAchievements?.title || '').trim(),
+          rows: (project.notableAchievements?.rows || []).map(({ subtitle, text }) => ({ subtitle: String(subtitle || '').trim(), text: String(text || '').trim() })).filter((achievement) => achievement.subtitle || achievement.text),
+          image: String(project.notableAchievements?.image || '').trim()
+        },
         video_url: project.useVideo ? project.videoFile || null : null, video_poster_url: project.videoPoster || null
       };
       saveButton.disabled = true;
@@ -643,7 +829,7 @@ if (page.label === 'Projects') {
     projectTools.hidden = false;
     projectManager.hidden = false;
     projectFrame.hidden = true;
-    draftProject = { id: '', title: 'New project', status: 'Draft', slug: '', description: '', text: '', image: '', tag: '', duration: '', client: '', website: '', gallery: [], useVideo: false, videoPoster: '', videoFile: '' };
+    draftProject = { id: '', title: 'New project', status: 'Draft', slug: '', description: '', text: '', keyInsights: [], overviewImage: '', designChallenge: { title: 'Design Challenge', prompt: '', questions: [], images: ['', ''] }, notableAchievements: { title: 'Notable Achievements', rows: [], image: '' }, image: '', tag: '', duration: '', client: '', website: '', gallery: [], useVideo: false, videoPoster: '', videoFile: '' };
     renderProjectOptions();
     renderProjectForm();
     projectManager.scrollTop = 0;

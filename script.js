@@ -580,16 +580,67 @@ if (isPublicProjectDetail) {
   const projectSlug = new URLSearchParams(window.location.search).get('slug') || (projectPath.at(-1) === 'index.html' ? projectPath.at(-2) : projectPath.at(-1));
   const renderProjectDetail = async () => {
     try {
-      const rows = await window.projectskevvDb.from('project_posts').select('title,slug,description,body_text,cover_image_url,tag,duration,client,website_url,gallery_urls,published_at', `status=eq.published&slug=eq.${encodeURIComponent(projectSlug)}`);
+      const rows = await window.projectskevvDb.from('project_posts').select('title,slug,description,body_text,key_insights,overview_image_url,design_challenge,notable_achievements,cover_image_url,tag,duration,client,website_url,gallery_urls,published_at', `status=eq.published&slug=eq.${encodeURIComponent(projectSlug)}`);
       const project = rows[0];
       if (!project) { document.querySelector('main').innerHTML = '<section class="project-empty-state"><p>This project is not published.</p></section>'; revealDbContent(document.querySelector('.project-detail-page main')); return; }
       const setText = (selector, value) => { const element = document.querySelector(selector); if (element) element.textContent = value || ''; };
       setText('.project-detail-title-wrap h1', (project.title || 'Untitled project').toUpperCase());
       setText('.project-detail-description', project.description);
-      setText('.project-summary', project.body_text);
+      const overview = document.querySelector('.project-summary');
+      if (overview) overview.textContent = project.description || '';
+      const overviewMedia = document.querySelector('.project-overview-media img');
+      if (overviewMedia) {
+        overviewMedia.src = project.overview_image_url || '';
+        overviewMedia.closest('figure').hidden = !project.overview_image_url;
+      }
+      const insightList = document.querySelector('.project-insight-list');
+      if (insightList && Array.isArray(project.key_insights)) {
+        insightList.replaceChildren(...project.key_insights.map((insight) => {
+          const row = document.createElement('div'); row.className = 'project-insight-item';
+          const subtitle = document.createElement('p'); subtitle.className = 'project-insight-title'; subtitle.textContent = insight.subtitle || '';
+          const copy = document.createElement('p'); copy.className = 'project-insight-copy'; copy.textContent = insight.text || '';
+          row.append(subtitle, copy); return row;
+        }));
+      }
+      const challenge = project.design_challenge && typeof project.design_challenge === 'object' ? project.design_challenge : {};
+      const challengeTitle = document.querySelector('#project-challenge-title');
+      const challengePrompt = document.querySelector('.project-challenge-prompt');
+      const challengeQuestions = document.querySelector('.project-challenge-questions');
+      if (challengeTitle) {
+        const [firstWord, ...remainingWords] = String(challenge.title || 'Design Challenge').split(' ');
+        challengeTitle.replaceChildren(document.createTextNode(firstWord));
+        if (remainingWords.length) challengeTitle.append(document.createElement('br'), document.createTextNode(remainingWords.join(' ')));
+      }
+      if (challengePrompt) challengePrompt.textContent = challenge.prompt || '';
+      if (challengeQuestions && Array.isArray(challenge.questions)) challengeQuestions.replaceChildren(...challenge.questions.map((question) => {
+        const item = document.createElement('li'); item.textContent = question || ''; return item;
+      }));
+      const challengeImages = document.querySelectorAll('.project-challenge-images img');
+      challengeImages.forEach((image, index) => {
+        image.src = challenge.images?.[index] || '';
+        image.closest('figure').hidden = !challenge.images?.[index];
+      });
+      const achievements = project.notable_achievements && typeof project.notable_achievements === 'object' ? project.notable_achievements : {};
+      const achievementsTitle = document.querySelector('#project-achievements-title');
+      const achievementRows = document.querySelector('.project-achievement-rows');
+      const achievementsMedia = document.querySelector('.project-achievements-media img');
+      if (achievementsTitle) {
+        const [firstWord, ...remainingWords] = String(achievements.title || 'Notable Achievements').split(' ');
+        achievementsTitle.replaceChildren(document.createTextNode(firstWord));
+        if (remainingWords.length) achievementsTitle.append(document.createElement('br'), document.createTextNode(remainingWords.join(' ')));
+      }
+      if (achievementRows && Array.isArray(achievements.rows)) achievementRows.replaceChildren(...achievements.rows.map((achievement) => {
+        const row = document.createElement('div'); row.className = 'project-achievement-row';
+        const subtitle = document.createElement('p'); subtitle.className = 'project-achievement-name'; subtitle.textContent = achievement.subtitle || '';
+        const copy = document.createElement('p'); copy.textContent = achievement.text || '';
+        row.append(subtitle, copy); return row;
+      }));
+      if (achievementsMedia) {
+        achievementsMedia.src = achievements.image || '';
+        achievementsMedia.closest('figure').hidden = !achievements.image;
+      }
       setText('.project-detail-meta dd:nth-of-type(1)', project.duration);
       setText('.project-detail-meta dd:nth-of-type(2)', project.client);
-      setText('.meta-row .meta-label:nth-child(2)', project.tag);
       const website = document.querySelector('.project-detail-button-primary');
       if (website) { website.href = project.website_url || '#'; website.hidden = !project.website_url; }
       const setMedia = (container, source, alt) => {
@@ -1313,14 +1364,63 @@ if (cmsPreview) {
     const title = document.querySelector('.project-detail-title-wrap h1');
     const description = document.querySelector('.project-detail-description');
     const website = document.querySelector('.project-detail-button-primary');
-    const tag = document.querySelector('.meta-row .meta-label:nth-child(2)');
     const summary = document.querySelector('.project-summary');
+    const overviewMedia = document.querySelector('.project-overview-media img');
+    const challengeImages = document.querySelectorAll('.project-challenge-images img');
+    const achievementsMedia = document.querySelector('.project-achievements-media img');
     const meta = [...document.querySelectorAll('.project-detail-meta dd')];
     if (title) title.textContent = (project.title || 'Untitled project').toUpperCase();
     if (description) description.textContent = project.description || 'Add a project description.';
     if (website) website.href = project.website || '#';
-    if (tag) tag.textContent = project.tag || 'Add tag';
-    if (summary) summary.textContent = project.text || 'Add project text.';
+    if (summary) summary.textContent = project.description || 'Add a project overview.';
+    if (overviewMedia) {
+      overviewMedia.src = project.overviewImage || '';
+      overviewMedia.closest('figure').hidden = !project.overviewImage;
+    }
+    const insightList = document.querySelector('.project-insight-list');
+    if (insightList && Array.isArray(project.keyInsights)) {
+      insightList.replaceChildren(...project.keyInsights.map((insight) => {
+        const row = document.createElement('div'); row.className = 'project-insight-item';
+        const subtitle = document.createElement('p'); subtitle.className = 'project-insight-title'; subtitle.textContent = insight.subtitle || '';
+        const copy = document.createElement('p'); copy.className = 'project-insight-copy'; copy.textContent = insight.text || '';
+        row.append(subtitle, copy); return row;
+      }));
+    }
+    const challenge = project.designChallenge && typeof project.designChallenge === 'object' ? project.designChallenge : {};
+    const challengeTitle = document.querySelector('#project-challenge-title');
+    const challengePrompt = document.querySelector('.project-challenge-prompt');
+    const challengeQuestions = document.querySelector('.project-challenge-questions');
+    if (challengeTitle) {
+      const [firstWord, ...remainingWords] = String(challenge.title || 'Design Challenge').split(' ');
+      challengeTitle.replaceChildren(document.createTextNode(firstWord));
+      if (remainingWords.length) challengeTitle.append(document.createElement('br'), document.createTextNode(remainingWords.join(' ')));
+    }
+    if (challengePrompt) challengePrompt.textContent = challenge.prompt || '';
+    if (challengeQuestions && Array.isArray(challenge.questions)) challengeQuestions.replaceChildren(...challenge.questions.map((question) => {
+      const item = document.createElement('li'); item.textContent = question || ''; return item;
+    }));
+    challengeImages.forEach((image, index) => {
+      image.src = challenge.images?.[index] || '';
+      image.closest('figure').hidden = !challenge.images?.[index];
+    });
+    const achievements = project.notableAchievements && typeof project.notableAchievements === 'object' ? project.notableAchievements : {};
+    const achievementsTitle = document.querySelector('#project-achievements-title');
+    const achievementRows = document.querySelector('.project-achievement-rows');
+    if (achievementsTitle) {
+      const [firstWord, ...remainingWords] = String(achievements.title || 'Notable Achievements').split(' ');
+      achievementsTitle.replaceChildren(document.createTextNode(firstWord));
+      if (remainingWords.length) achievementsTitle.append(document.createElement('br'), document.createTextNode(remainingWords.join(' ')));
+    }
+    if (achievementRows && Array.isArray(achievements.rows)) achievementRows.replaceChildren(...achievements.rows.map((achievement) => {
+      const row = document.createElement('div'); row.className = 'project-achievement-row';
+      const subtitle = document.createElement('p'); subtitle.className = 'project-achievement-name'; subtitle.textContent = achievement.subtitle || '';
+      const copy = document.createElement('p'); copy.textContent = achievement.text || '';
+      row.append(subtitle, copy); return row;
+    }));
+    if (achievementsMedia) {
+      achievementsMedia.src = achievements.image || '';
+      achievementsMedia.closest('figure').hidden = !achievements.image;
+    }
     if (meta[0]) meta[0].textContent = project.duration || 'Add duration';
     if (meta[1]) meta[1].textContent = project.client || 'Add client';
     const setProjectMedia = (container, source, alt) => {
@@ -2251,12 +2351,13 @@ if (cmsPreview) {
                     : textTarget.closest('.journal-article-copy') ? 'content'
             : textTarget.matches('#service-title, .project-detail-title-wrap h1') ? 'title'
             : textTarget.matches('.project-detail-description') ? 'description'
-            : textTarget.matches('.project-summary') ? 'text'
+            : textTarget.matches('.project-summary') ? 'description'
+              : textTarget.matches('.project-insight-copy') ? 'text'
               : textTarget.matches('#service-showcase-title') ? 'applicationTitle'
                 : textTarget.matches('.service-showcase-intro > p') ? 'applicationDescription'
                   : textTarget.matches('.service-showcase-feature h3') ? 'featureTitle'
                     : textTarget.matches('.service-showcase-feature p') ? 'featureText'
-              : textTarget.matches('.meta-row .meta-label:nth-child(2)') ? 'tag'
+              : textTarget.matches('.project-insight-title') ? 'tag'
                 : textTarget.matches('.project-detail-meta dd:nth-of-type(1)') ? 'duration'
                     : textTarget.matches('.project-detail-meta dd:nth-of-type(2)') ? 'client' : null;
           if (field) {

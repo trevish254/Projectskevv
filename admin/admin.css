@@ -133,6 +133,16 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .cms-project-gallery-row { align-items: center; display: grid; gap: 8px; grid-template-columns: 72px minmax(0, 1fr) auto; }
 .cms-project-gallery-row .cms-project-image-preview { height: 58px; width: 72px; }
 .cms-project-gallery-row input { min-width: 0; }
+.cms-project-insight-row { align-items: start; grid-template-columns: minmax(120px, .7fr) minmax(0, 1.3fr) auto; }
+.cms-project-insight-row textarea { min-height: 68px; min-width: 0; }
+.cms-project-challenge-row { align-items: start; grid-template-columns: 28px minmax(0, 1fr) auto; }
+.cms-project-challenge-row textarea { min-height: 58px; min-width: 0; }
+.cms-project-challenge-number { color: var(--admin-muted); font-size: 12px; padding: 10px 0; }
+.cms-project-design-challenge { display: grid; gap: 9px; }
+.cms-project-design-challenge-images { display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.cms-project-challenge-image { display: grid; gap: 7px; min-width: 0; }
+.cms-project-challenge-image > label { font-size: 11px; }
+.cms-project-challenge-image .cms-project-image-preview { height: 100px; width: 100%; }
 .cms-project-gallery-remove { background: #fff; border: 1px solid var(--admin-border); border-radius: 4px; color: #777; cursor: pointer; padding: 7px 8px; }
 .cms-project-add-image { background: #fff; border: 1px dashed #aaa; border-radius: 5px; color: #555; cursor: pointer; padding: 8px; text-align: left; }
 .cms-project-hint { color: var(--admin-muted); font-size: 11px; margin: 6px 0 0; }
@@ -184,6 +194,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
   .cms-project-field label { display: block; margin-bottom: 8px; }
   .cms-project-manager-heading > div { align-items: flex-start; flex-direction: column; gap: 10px; }
   .cms-live-project-meta { grid-template-columns: 1fr; }
+  .cms-project-design-challenge-images { grid-template-columns: 1fr; }
   .cms-service-tools { margin-left: 0; margin-right: 0; width: 100%; }
   .cms-journal-tools { margin-left: 0; margin-right: 0; width: 100%; }
 }
