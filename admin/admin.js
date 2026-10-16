@@ -85,6 +85,66 @@ const saveCmsRecord = async (table, record) => {
 };
 
 
+const cmsMediaBucket = 'projectskevv-media';
+const cmsAllowedImageTypes = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif']);
+const cmsMaxImageSize = 15 * 1024 * 1024;
+const cmsSlug = (value) => String(value || 'media').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'media';
+const uploadCmsImage = async (file, folder) => {
+  if (!cmsAllowedImageTypes.has(file.type)) throw new Error('Choose a JPG, PNG, WebP, GIF, or AVIF image.');
+  if (file.size > cmsMaxImageSize) throw new Error('Images must be 15 MB or smaller.');
+  await adminAuthReady;
+  const accessToken = window.projectskevvAdminAccessToken || adminSupabasePublishableKey;
+  const extension = file.name.split('.').pop().toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
+  const uniqueId = window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const safeFolder = folder.split('/').map(cmsSlug).join('/');
+  const objectPath = `${safeFolder}/${uniqueId}.${extension}`;
+  const encodedPath = objectPath.split('/').map(encodeURIComponent).join('/');
+  const response = await fetch(`${adminSupabaseUrl}/storage/v1/object/${cmsMediaBucket}/${encodedPath}`, {
+    method: 'POST',
+    headers: { apikey: adminSupabasePublishableKey, Authorization: `Bearer ${accessToken}`, 'Content-Type': file.type, 'x-upsert': 'false' },
+    body: file
+  });
+  if (!response.ok) throw new Error(await readSupabaseError(response));
+  return `${adminSupabaseUrl}/storage/v1/object/public/${cmsMediaBucket}/${encodedPath}`;
+};
+const addCmsImageUploader = (target, folder, onUploaded, multiple = false) => {
+  const control = document.createElement('div');
+  control.className = 'cms-image-upload-control';
+  const label = document.createElement('label');
+  label.className = 'cms-image-upload-button';
+  label.append(document.createTextNode(multiple ? 'Upload images' : 'Upload image'));
+  const picker = document.createElement('input');
+  picker.type = 'file';
+  picker.accept = 'image/jpeg,image/png,image/webp,image/gif,image/avif';
+  picker.multiple = multiple;
+  picker.hidden = true;
+  const status = document.createElement('span');
+  status.className = 'cms-image-upload-status';
+  status.setAttribute('role', 'status');
+  label.appendChild(picker);
+  control.append(label, status);
+  target.insertAdjacentElement('afterend', control);
+  picker.addEventListener('change', async () => {
+    const files = [...picker.files];
+    if (!files.length) return;
+    picker.disabled = true;
+    status.textContent = 'Uploading…';
+    try {
+      const urls = [];
+      for (const file of files) urls.push(await uploadCmsImage(file, folder));
+      onUploaded(urls);
+      status.textContent = urls.length === 1 ? 'Uploaded. Save the record to keep this image.' : 'Uploaded. Save the record to keep these images.';
+    } catch (error) {
+      const missingBucket = /bucket.*not found|not found.*bucket/i.test(error.message);
+      status.textContent = missingBucket
+        ? 'Storage setup is required. Run supabase/012_create_projectskevv_media_bucket.sql, then retry.'
+        : `Upload failed: ${error.message}`;
+      console.error('Unable to upload CMS image', error);
+    } finally { picker.disabled = false; picker.value = ''; }
+  });
+  return control;
+};
+
 const cmsPages = {
   home: { label: 'Home', source: '../index.html' },
   services: { label: 'Services', source: '../services/index.html' },
@@ -444,12 +504,12 @@ if (page.label === 'Projects') {
           <div class="cms-project-field"><label for="project-slug">Slug</label><input id="project-slug" data-field="slug" value="" required /></div>
           <div class="cms-project-field"><label for="project-description">Description</label><textarea id="project-description" data-field="description"></textarea></div>
           <div class="cms-project-field"><label for="project-text">Text</label><textarea id="project-text" data-field="text"></textarea></div>
-        <div class="cms-project-field"><label for="project-image">Main Image / Thumb</label><div class="cms-project-media-control"><div class="cms-project-image-preview" data-main-image-preview><span>No image yet</span></div><input id="project-image" type="url" data-field="image" placeholder="Paste image, GIF, or video URL" /><p class="cms-project-hint">Images, animated GIFs, and MP4/WebM/OGG/MOV links are supported.</p></div></div>
+        <div class="cms-project-field"><label for="project-image">Main Image / Thumb</label><div class="cms-project-media-control"><div class="cms-project-image-preview" data-main-image-preview><span>No image yet</span></div><input id="project-image" type="url" data-field="image" placeholder="Paste image, GIF, or video URL" /><p class="cms-project-hint">Upload JPG, PNG, WebP, GIF, or AVIF images up to 15 MB, or paste a hosted video URL.</p></div></div>
           <div class="cms-project-field"><label for="project-tag">Tag</label><input id="project-tag" data-field="tag" /></div>
           <div class="cms-project-field"><label for="project-duration">Duration</label><input id="project-duration" data-field="duration" /></div>
           <div class="cms-project-field"><label for="project-client">Client</label><input id="project-client" data-field="client" /></div>
           <div class="cms-project-field"><label for="project-website">Website</label><input id="project-website" type="url" data-field="website" placeholder="Page or URL..." /></div>
-          <div class="cms-project-field"><label>Gallery</label><div class="cms-project-gallery"><div class="cms-project-gallery-list" data-gallery-list></div><button class="cms-project-add-image" type="button" data-gallery-add>+ Add image</button><p class="cms-project-hint">Add images one by one. Each image appears as a visual thumbnail.</p></div></div>
+          <div class="cms-project-field"><label>Gallery</label><div class="cms-project-gallery"><div class="cms-project-gallery-list" data-gallery-list></div><button class="cms-project-add-image" type="button" data-gallery-add>+ Add image</button><p class="cms-project-hint">Upload images from your device or paste a hosted media URL.</p></div></div>
           <div class="cms-project-field"><label for="project-use-video">Video</label><div><label><input id="project-use-video" type="checkbox" data-field="useVideo" /> Use video as cover</label><input id="project-video-poster" type="url" data-field="videoPoster" placeholder="Video poster URL" style="margin-top:8px" /><input id="project-video-file" type="url" data-field="videoFile" placeholder="Video file URL" style="margin-top:8px" /></div></div>
           <div class="cms-project-form-actions"><span class="cms-project-notice">${notice}</span><button class="cms-project-cancel" type="button" data-project-cancel>Cancel</button><button class="cms-project-save" type="submit">Save project</button></div>
         </form>
@@ -467,6 +527,11 @@ if (page.label === 'Projects') {
         updateProjectLivePreview();
         updateProjectMediaPreviews(project);
       });
+    });
+    const mainImageField = projectManager.querySelector('[data-field="image"]');
+    addCmsImageUploader(mainImageField, `projects/${project.slug || project.id || project.title}/cover`, (urls) => {
+      mainImageField.value = urls[0];
+      mainImageField.dispatchEvent(new Event('input', { bubbles: true }));
     });
     const galleryList = projectManager.querySelector('[data-gallery-list]');
     const renderGalleryFields = () => {
@@ -487,6 +552,10 @@ if (page.label === 'Projects') {
           updateProjectLivePreview();
         });
         remove.addEventListener('click', () => { project.gallery.splice(index, 1); renderGalleryFields(); updateProjectLivePreview(); });
+        addCmsImageUploader(input, `projects/${project.slug || project.id || project.title}/gallery`, (urls) => {
+          input.value = urls[0];
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+        });
         row.querySelector('input').addEventListener('error', () => { preview.innerHTML = '<span>Check URL</span>'; });
         galleryList.appendChild(row);
       });
@@ -719,7 +788,7 @@ if (page.label === 'Services') {
           <div class="cms-service-section-label">Brand Application</div>
           <div class="cms-project-field"><label>Section title</label><input data-service-field="applicationTitle" /></div>
           <div class="cms-project-field"><label>Section intro</label><textarea data-service-field="applicationDescription"></textarea></div>
-          <div class="cms-project-field"><label>Application visuals</label><div class="cms-service-visual-list"><textarea data-service-field="applicationVisuals" placeholder="One image, GIF, or video URL per line"></textarea><p class="cms-project-hint">These feed the Brand Application visual strip.</p></div></div>
+          <div class="cms-project-field"><label>Application visuals</label><div class="cms-service-visual-list"><textarea data-service-field="applicationVisuals" placeholder="Existing image URLs, one per line; you can also upload files below"></textarea><p class="cms-project-hint">These feed the Brand Application visual strip.</p></div></div>
           <div class="cms-project-field"><label>Detail 1</label><div><input data-service-field="detail1Title" placeholder="Title" /><textarea data-service-field="detail1Description" placeholder="Description"></textarea><input type="url" data-service-field="detail1Image" placeholder="Image, GIF, or video URL" /></div></div>
           <div class="cms-project-field"><label>Detail 2</label><div><input data-service-field="detail2Title" placeholder="Title" /><textarea data-service-field="detail2Description" placeholder="Description"></textarea><input type="url" data-service-field="detail2Image" placeholder="Image, GIF, or video URL" /></div></div>
           <div class="cms-project-field"><label>Detail 3</label><div><input data-service-field="detail3Title" placeholder="Title" /><textarea data-service-field="detail3Description" placeholder="Description"></textarea><input type="url" data-service-field="detail3Image" placeholder="Image, GIF, or video URL" /></div></div>
@@ -732,6 +801,23 @@ if (page.label === 'Services') {
     serviceManager.querySelectorAll('[data-service-field]').forEach((field) => {
       field.value = serviceValue(service, field.dataset.serviceField);
       field.addEventListener('input', () => { service[field.dataset.serviceField] = field.dataset.serviceField === 'applicationVisuals' ? field.value.split(/\r?\n/).map((item) => item.trim()).filter(Boolean) : field.value; updateServicePreview(); });
+    });
+    const serviceImageFields = new Set(['image', 'detail1Image', 'detail2Image', 'detail3Image', 'featureImage', 'websiteImage']);
+    serviceManager.querySelectorAll('[data-service-field]').forEach((field) => {
+      const fieldName = field.dataset.serviceField;
+      const folder = `services/${service.slug || service.id || service.title}/${fieldName}`;
+      if (serviceImageFields.has(fieldName)) {
+        addCmsImageUploader(field, folder, (urls) => {
+          field.value = urls[0];
+          field.dispatchEvent(new Event('input', { bubbles: true }));
+        });
+      } else if (fieldName === 'applicationVisuals') {
+        addCmsImageUploader(field, folder, (urls) => {
+          service.applicationVisuals = [...(service.applicationVisuals || []), ...urls];
+          field.value = service.applicationVisuals.join('\n');
+          field.dispatchEvent(new Event('input', { bubbles: true }));
+        }, true);
+      }
     });
     const previewFrame = serviceManager.querySelector('[data-service-preview-frame]');
     previewFrame.addEventListener('load', updateServicePreview);
