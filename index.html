@@ -38,26 +38,27 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,400;6..96,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="styles.css?v=20261005-mobile-inertia" />
+    <link rel="stylesheet" href="styles.css?v=20261016-shared-navbar-v1" />
   </head>
   <body>
     <header class="site-header">
       <a class="brand-mark" href="/" aria-label="Projectskevv home"><img src="assets/projectskevv-navbar-logo.png" alt="" aria-hidden="true" /><span class="brand-name">Projectskevv</span></a>
+      <p class="header-studio-note">A Nairobi studio crafting thoughtful brands and digital experiences.</p>
       <nav class="site-nav" aria-label="Main navigation">
-        <a href="./projects/index.html">Projects</a>
-        <a href="./journal/index.html">Journal</a>
-        <a href="./about/index.html">About</a>
-        <a href="./services/index.html">Services</a>
-        <a href="./contact/index.html">Contact <span aria-hidden="true">↗</span></a>
+        <a href="./projects/index.html"><span class="nav-caption">Selected work</span><span class="nav-main"><span>Projects</span><span class="nav-arrow" aria-hidden="true">→</span></span></a>
+        <a href="./journal/index.html"><span class="nav-caption">Notes &amp; ideas</span><span class="nav-main"><span>Journal</span><span class="nav-arrow" aria-hidden="true">→</span></span></a>
+        <a href="./about/index.html"><span class="nav-caption">Meet the studio</span><span class="nav-main"><span>About us</span><span class="nav-arrow" aria-hidden="true">→</span></span></a>
+        <a href="./services/index.html"><span class="nav-caption">Work with us</span><span class="nav-main"><span>Services</span><span class="nav-arrow" aria-hidden="true">→</span></span></a>
+        <a href="./contact/index.html"><span class="nav-caption">Get in touch</span><span class="nav-main"><span>Contact</span><span class="nav-arrow" aria-hidden="true">→</span></span></a>
       </nav>
     </header>
 
     <!-- Hero Container -->
     <main>
       <section class="hero-container" aria-labelledby="hero-title">
-        <!-- Background Media (GIF/Image) -->
+        <!-- Background Media -->
         <div class="background-wrapper" aria-hidden="true">
-          <img src="https://framerusercontent.com/images/GkcA1U6rkbditvM8ObhLKfY6Ik.gif?width=400&height=400" alt="" />
+          <video class="hero-background-video" src="https://res.cloudinary.com/dfedn2xsg/video/upload/v1792131261/Model_interacting_with_botanical_E2_80_A6_20261016085337_20261016090337_lhq0re.mp4" autoplay muted loop playsinline></video>
           <div class="tint-overlay"></div>
         </div>
 
@@ -87,6 +88,50 @@
             <div class="featured-project-slide"><h3>Beach Shoot</h3><p>Stories with a sharper point of view.</p></div>
             <div class="featured-project-slide"><h3>Digital Culture</h3><p>Web experiences built to move brands forward.</p></div>
             <div class="featured-project-slide"><h3>New Perspective</h3><p>Visual systems for brands ready to grow.</p></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="mission-scroll" aria-labelledby="mission-title">
+        <div class="mission-scroll-stage">
+          <div class="mission-copy">
+            <p class="mission-eyebrow"><span aria-hidden="true">•</span> Our mission</p>
+            <h2 id="mission-title">To give founders the clarity, support, and confidence to build brands they’re proud to grow.</h2>
+            <p class="mission-description">Through strategy-led design, Projectskevv transforms ideas into cohesive brand, web, app, and content experiences that feel refined, reliable, and ready for growth.</p>
+            <div class="mission-feature-media" aria-hidden="true">
+              <img class="mission-feature-image is-active" src="https://res.cloudinary.com/dfedn2xsg/image/upload/v1792133776/Brand_identity_utzv1z.png" alt="" data-mission-image="0" />
+              <img class="mission-feature-image" src="https://res.cloudinary.com/dfedn2xsg/image/upload/v1792133769/Digital_studio_qjro5l.png" alt="" data-mission-image="1" />
+              <img class="mission-feature-image" src="https://res.cloudinary.com/dfedn2xsg/image/upload/v1792133755/Photo_and_film_fnylvd.png" alt="" data-mission-image="2" />
+              <img class="mission-feature-image" src="https://framerusercontent.com/images/q7ph0veWTcIgKChH0aJrZBDKGog.png" alt="" data-mission-image="3" />
+            </div>
+            <div class="mission-actions">
+              <a href="#pricing">Service Pricing <span aria-hidden="true">→</span></a>
+              <a href="#contact">Inquire <span aria-hidden="true">→</span></a>
+            </div>
+          </div>
+          <div class="mission-services-window" aria-label="Our services; scroll down to move through the service cards">
+            <div class="mission-services-track">
+              <article class="mission-service-card">
+                <span class="mission-service-number">1</span>
+                <h3>Brand<br />Identity</h3>
+                <p>A strategic visual foundation for founders who need a polished, memorable brand identity.</p>
+              </article>
+              <article class="mission-service-card">
+                <span class="mission-service-number">2</span>
+                <h3>Digital<br />Design</h3>
+                <p>Web and app experiences that make it simple for people to connect with your brand.</p>
+              </article>
+              <article class="mission-service-card">
+                <span class="mission-service-number">3</span>
+                <h3>Photo &amp;<br />Film</h3>
+                <p>Distinctive imagery and video that bring your products, people, and ideas to life.</p>
+              </article>
+              <article class="mission-service-card">
+                <span class="mission-service-number">4</span>
+                <h3>Creative<br />Strategy</h3>
+                <p>A clear point of view and practical direction to help your brand grow with confidence.</p>
+              </article>
+            </div>
           </div>
         </div>
       </section>
@@ -152,7 +197,7 @@
           <article class="brands-card brands-featured-card">
             <div class="brands-card-top"><span>★★★★★</span><span>1/5</span></div>
             <img src="https://framerusercontent.com/images/75Ki88np43SW5rT6tbMlWFiQ.png" alt="Sophie Turner portrait" />
-            <button class="brands-play" type="button" aria-label="Play Sophie Turner testimonial">▶</button>
+            <button class="brands-play" type="button" aria-label="Play Sophie Turner testimonial"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.8c0-.8.9-1.3 1.6-.9l9.2 6.1a1.2 1.2 0 0 1 0 2L9.6 19c-.7.5-1.6 0-1.6-.9V5.8Z"/></svg></button>
             <div class="brands-card-person"><strong>SOPHIE TURNER</strong><span>Brand Strategist at Noora</span></div>
           </article>
           <article class="brands-card">
@@ -224,17 +269,16 @@
           </div>
         </div>
       </section>
-      <section class="service-accordion-section" aria-label="Service categories">
-        <div class="service-accordion-list">
-          <article class="service-accordion-item is-open"><button class="service-accordion-header" type="button" aria-expanded="true"><span class="accordion-number">01</span><span class="accordion-title">ART DIRECTION</span><span class="accordion-icon" aria-hidden="true">−</span></button><div class="service-accordion-content"><div class="accordion-features"><span>Visual direction</span><span>Type rules</span><span>Layout system</span></div><p>We set the visual direction for a brand or a project. That includes references, layout rules, typography choices, and the overall look and feel—so every page and asset follows the same logic.</p></div></article>
-          <article class="service-accordion-item"><button class="service-accordion-header" type="button" aria-expanded="false"><span class="accordion-number">02</span><span class="accordion-title">BRANDING</span><span class="accordion-icon" aria-hidden="true">+</span></button><div class="service-accordion-content"><div class="accordion-features"><span>Identity system</span><span>Brand language</span><span>Guidelines</span></div><p>We build identities that are clear, distinctive, and ready to move across every touchpoint.</p></div></article>
-          <article class="service-accordion-item"><button class="service-accordion-header" type="button" aria-expanded="false"><span class="accordion-number">03</span><span class="accordion-title">MARKETING</span><span class="accordion-icon" aria-hidden="true">+</span></button><div class="service-accordion-content"><div class="accordion-features"><span>Campaign direction</span><span>Content systems</span><span>Launch support</span></div><p>We turn the idea into a message, campaign, and set of moments people can actually remember.</p></div></article>
-          <article class="service-accordion-item"><button class="service-accordion-header" type="button" aria-expanded="false"><span class="accordion-number">04</span><span class="accordion-title">WEB DEVELOPMENT</span><span class="accordion-icon" aria-hidden="true">+</span></button><div class="service-accordion-content"><div class="accordion-features"><span>Creative development</span><span>CMS builds</span><span>Interaction design</span></div><p>We make digital experiences that feel expressive, perform well, and stay useful long after launch.</p></div></article>
-          <article class="service-accordion-item"><button class="service-accordion-header" type="button" aria-expanded="false"><span class="accordion-number">05</span><span class="accordion-title">PHOTOGRAPHY/VIDEOGRAPHY</span><span class="accordion-icon" aria-hidden="true">+</span></button><div class="service-accordion-content"><div class="accordion-features"><span>Art direction</span><span>Production</span><span>Post-production</span></div><p>We create images and moving stories with a point of view, from the first frame to the final cut.</p></div></article>
-          <article class="service-accordion-item"><button class="service-accordion-header" type="button" aria-expanded="false"><span class="accordion-number">06</span><span class="accordion-title">MODELLING/FASHION</span><span class="accordion-icon" aria-hidden="true">+</span></button><div class="service-accordion-content"><div class="accordion-features"><span>Talent direction</span><span>Styling</span><span>Editorial production</span></div><p>We bring people, clothes, and visual worlds together for work that feels considered and alive.</p></div></article>
-          <article class="service-accordion-item"><button class="service-accordion-header" type="button" aria-expanded="false"><span class="accordion-number">07</span><span class="accordion-title">REAL ESTATE</span><span class="accordion-icon" aria-hidden="true">+</span></button><div class="service-accordion-content"><div class="accordion-features"><span>Property identity</span><span>Visualisation</span><span>Digital showcase</span></div><p>We give places a stronger presence through clear positioning, imagery, and digital experiences.</p></div></article>
+      <section class="service-accordion-section menu-grid-section" aria-label="Explore our services">
+        <div class="menu-grid-heading"><span>WHAT WE DO</span><p>Select a discipline to explore the work.</p></div>
+        <div class="menu-grid-list">
+          <article class="menu-grid-item"><button class="menu-grid-row" type="button" aria-expanded="false"><span class="menu-grid-number">01</span><span class="menu-grid-title">ART DIRECTION</span><span class="menu-grid-thumbs" aria-hidden="true"><i style="--thumb:url('https://framerusercontent.com/images/D8h98KOCGKp13nuqhuv2w27gLg.png?width=600')"></i><i style="--thumb:url('https://framerusercontent.com/images/ZJe1rEofwiUo2emA3Pb5PxDnQI.png')"></i><i style="--thumb:url('https://framerusercontent.com/images/wKToKOAC0a91cbb3H1k4n4hkOdM.png')"></i></span><span class="menu-grid-toggle" aria-hidden="true">+</span></button><div class="menu-grid-panel"><div class="menu-grid-copy"><div class="menu-grid-capabilities"><span>Visual direction</span><span>Type rules</span><span>Layout system</span></div><p>We set the visual direction for a brand or project, shaping references, typography, and layout into a clear visual system.</p></div><div class="menu-grid-gallery"><img src="https://framerusercontent.com/images/D8h98KOCGKp13nuqhuv2w27gLg.png?width=900" alt="Art direction project" loading="lazy"><img src="https://framerusercontent.com/images/ZJe1rEofwiUo2emA3Pb5PxDnQI.png" alt="Creative direction project" loading="lazy"><img src="https://framerusercontent.com/images/wKToKOAC0a91cbb3H1k4n4hkOdM.png" alt="Visual identity project" loading="lazy"></div></div></article>
+          <article class="menu-grid-item"><button class="menu-grid-row" type="button" aria-expanded="false"><span class="menu-grid-number">02</span><span class="menu-grid-title">BRANDING</span><span class="menu-grid-thumbs" aria-hidden="true"><i style="--thumb:url('https://framerusercontent.com/images/8nrq8L6qbVPhVhBA9TMoevGLql4.webp')"></i><i style="--thumb:url('https://framerusercontent.com/images/daFBEqvccTmPwLaEvq3zBCJm8PU.png')"></i><i style="--thumb:url('https://framerusercontent.com/images/xh2fVOTsCE3Sh3cD7Cy9JcjItI.png')"></i></span><span class="menu-grid-toggle" aria-hidden="true">+</span></button><div class="menu-grid-panel"><div class="menu-grid-copy"><div class="menu-grid-capabilities"><span>Identity system</span><span>Brand language</span><span>Guidelines</span></div><p>We build distinctive identities and practical brand systems that stay consistent across every touchpoint.</p></div><div class="menu-grid-gallery"><img src="https://framerusercontent.com/images/8nrq8L6qbVhVhBA9TMoevGLql4.webp" alt="Brand identity project" loading="lazy"><img src="https://framerusercontent.com/images/daFBEqvccTmPwLaEvq3zBCJm8PU.png" alt="Brand photography" loading="lazy"><img src="https://framerusercontent.com/images/xh2fVOTsCE3Sh3cD7Cy9JcjItI.png" alt="Brand design project" loading="lazy"></div></div></article>
+          <article class="menu-grid-item"><button class="menu-grid-row" type="button" aria-expanded="false"><span class="menu-grid-number">03</span><span class="menu-grid-title">WEB DEVELOPMENT</span><span class="menu-grid-thumbs" aria-hidden="true"><i style="--thumb:url('https://framerusercontent.com/images/xh2fVOTsCE3Sh3cD7Cy9JcjItI.png')"></i><i style="--thumb:url('https://framerusercontent.com/images/wKToKOAC0a91cbb3H1k4n4hkOdM.png')"></i><i style="--thumb:url('https://framerusercontent.com/images/8nrq8L6qbVhVhBA9TMoevGLql4.webp')"></i></span><span class="menu-grid-toggle" aria-hidden="true">+</span></button><div class="menu-grid-panel"><div class="menu-grid-copy"><div class="menu-grid-capabilities"><span>Creative development</span><span>CMS builds</span><span>Interaction design</span></div><p>We build expressive, fast, and useful digital experiences, shaped around your business and audience.</p></div><div class="menu-grid-gallery"><img src="https://framerusercontent.com/images/xh2fVOTsCE3Sh3cD7Cy9JcjItI.png" alt="Web design project" loading="lazy"><img src="https://framerusercontent.com/images/wKToKOAC0a91cbb3H1k4n4hkOdM.png" alt="Digital experience" loading="lazy"><img src="https://framerusercontent.com/images/8nrq8L6qbVhVhBA9TMoevGLql4.webp" alt="Digital brand" loading="lazy"></div></div></article>
+          <article class="menu-grid-item"><button class="menu-grid-row" type="button" aria-expanded="false"><span class="menu-grid-number">04</span><span class="menu-grid-title">PHOTOGRAPHY / FILM</span><span class="menu-grid-thumbs" aria-hidden="true"><i style="--thumb:url('https://framerusercontent.com/images/daFBEqvccTmPwLaEvq3zBCJm8PU.png')"></i><i style="--thumb:url('https://framerusercontent.com/images/ZJe1rEofwiUo2emA3Pb5PxDnQI.png')"></i><i style="--thumb:url('https://framerusercontent.com/images/3reGuWpWiARbmfYlToDFtUzhTc.png')"></i></span><span class="menu-grid-toggle" aria-hidden="true">+</span></button><div class="menu-grid-panel"><div class="menu-grid-copy"><div class="menu-grid-capabilities"><span>Art direction</span><span>Production</span><span>Post-production</span></div><p>We create still and moving images with a point of view, from first concept through final edit.</p></div><div class="menu-grid-gallery"><img src="https://framerusercontent.com/images/daFBEqvccTmPwLaEvq3zBCJm8PU.png" alt="Photography project" loading="lazy"><img src="https://framerusercontent.com/images/ZJe1rEofwiUo2emA3Pb5PxDnQI.png" alt="Editorial photography" loading="lazy"><img src="https://framerusercontent.com/images/3reGuWpWiARbmfYlToDFtUzhTc.png" alt="Film production" loading="lazy"></div></div></article>
+          <article class="menu-grid-item"><button class="menu-grid-row" type="button" aria-expanded="false"><span class="menu-grid-number">05</span><span class="menu-grid-title">MODELLING / FASHION</span><span class="menu-grid-thumbs" aria-hidden="true"><i style="--thumb:url('https://framerusercontent.com/images/3tETJhxzC5Ip37bkrel8frXLtYs.png')"></i><i style="--thumb:url('https://framerusercontent.com/images/daFBEqvccTmPwLaEvq3zBCJm8PU.png')"></i><i style="--thumb:url('https://framerusercontent.com/images/75Ki88np43SW5rT6tbMlWFiQ.png')"></i></span><span class="menu-grid-toggle" aria-hidden="true">+</span></button><div class="menu-grid-panel"><div class="menu-grid-copy"><div class="menu-grid-capabilities"><span>Talent direction</span><span>Styling</span><span>Editorial production</span></div><p>We bring people, styling, and image-making together to create fashion stories with a distinct point of view.</p></div><div class="menu-grid-gallery"><img src="https://framerusercontent.com/images/3tETJhxzC5Ip37bkrel8frXLtYs.png" alt="Fashion project" loading="lazy"><img src="https://framerusercontent.com/images/daFBEqvccTmPwLaEvq3zBCJm8PU.png" alt="Fashion photography" loading="lazy"><img src="https://framerusercontent.com/images/75Ki88np43SW5rT6tbMlWFiQ.png" alt="Fashion campaign" loading="lazy"></div></div></article>
         </div>
-        <div class="accordion-footer"><p>If you don&apos;t find exactly the service you need, we can tailor one for you.</p><a class="accordion-cta" href="#contact">BOOK A CALL <span aria-hidden="true">↗</span></a></div>
+        <div class="accordion-footer"><p>Looking for something specific? We can shape the service around your goals.</p><a class="accordion-cta" href="#contact">BOOK A CALL <span aria-hidden="true">↗</span></a></div>
       </section>
       <section id="workflow" class="workflow-section" aria-labelledby="workflow-title">
         <div class="workflow-header">
@@ -255,11 +299,11 @@
         <div class="about-container">
           <div class="about-content-wrapper">
             <div class="about-label-row"><span>MORE ABOUT US</span><span>02</span></div>
-            <p class="about-description" id="studio-title">We&apos;re a small team in Kenya doing thoughtful design work for brands that want to stand out. No big agency overhead, no unnecessary process, just clear strategic thinking and truly honest execution.</p>
+            <p class="about-description" id="studio-title">We&apos;re a team in Kenya doing thoughtful design work for brands that want to stand out. No big agency overhead, no unnecessary process, just clear strategic thinking and truly honest execution.</p>
             <div class="button-group"><a href="#about" class="btn primary">ABOUT THE STUDIO</a><a href="#projects" class="btn secondary">OUR WORK <span>↗</span></a></div>
           </div>
           <div class="studio-feature-media">
-            <div class="studio-media-image"><img src="https://framerusercontent.com/images/75Ki88np43SW5rT6tbMlWFiQ.png" alt="A still from a Projectskevv creative production" /><span class="studio-media-year">2026</span><button class="play-button" type="button" aria-label="Play featured studio film">▶</button></div>
+            <div class="studio-media-image"><img src="https://framerusercontent.com/images/75Ki88np43SW5rT6tbMlWFiQ.png" alt="A still from a Projectskevv creative production" /><span class="studio-media-year">2026</span><button class="play-button" type="button" aria-label="Play featured studio film"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.8c0-.8.9-1.3 1.6-.9l9.2 6.1a1.2 1.2 0 0 1 0 2L9.6 19c-.7.5-1.6 0-1.6-.9V5.8Z"/></svg><span>PLAY FILM</span></button></div>
           </div>
           <div class="stats-grid"><div class="stat-item"><span class="stat-number" data-count="500" data-suffix="+">0+</span><span class="stat-label">PROJECTS DELIVERED</span></div><div class="stat-item"><span class="stat-number" data-count="200" data-suffix="+">0+</span><span class="stat-label">CLIENTS WORLDWIDE</span></div><p class="stat-footer">Numbers that show we&apos;ve been doing this long enough to know what works.</p></div>
         </div>
@@ -275,31 +319,58 @@
           <div class="brands-controls" aria-label="Testimonial controls"><button type="button" aria-label="Previous testimonial">&#8249;</button><button type="button" aria-label="Next testimonial">&#8250;</button></div>
         </div>
         <div class="brands-testimonial-grid">
-          <article class="brands-card brands-featured-card"><div class="brands-card-top"><span>★★★★★</span><span>1/5</span></div><img src="https://framerusercontent.com/images/75Ki88np43SW5rT6tbMlWFiQ.png" alt="Sophie Turner portrait" /><button class="brands-play" type="button" aria-label="Play testimonial">▶</button><div class="brands-card-person"><strong>SOPHIE TURNER</strong><span>Brand Strategist at Noora</span></div></article>
+          <article class="brands-card brands-featured-card"><div class="brands-card-top"><span>★★★★★</span><span>1/5</span></div><img src="https://framerusercontent.com/images/75Ki88np43SW5rT6tbMlWFiQ.png" alt="Sophie Turner portrait" /><button class="brands-play" type="button" aria-label="Play Sophie Turner testimonial"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.8c0-.8.9-1.3 1.6-.9l9.2 6.1a1.2 1.2 0 0 1 0 2L9.6 19c-.7.5-1.6 0-1.6-.9V5.8Z"/></svg></button><div class="brands-card-person"><strong>SOPHIE TURNER</strong><span>Brand Strategist at Noora</span></div></article>
           <article class="brands-card"><div class="brands-card-top"><span>★★★★★</span><span>2/5</span></div><blockquote>&ldquo;They gave us a clear direction early, and everything after that became easier. The work is clean and consistent.&rdquo;</blockquote><div class="brands-card-person"><strong>• &nbsp; SARAH MITCHELL</strong><span>Brand Strategist</span></div></article>
           <article class="brands-card"><div class="brands-card-top"><span>★★★★★</span><span>3/5</span></div><blockquote>&ldquo;Intelligent tools that understand aesthetics and adapt to your creative direction.&rdquo;</blockquote><div class="brands-card-person"><strong>• &nbsp; MAYA RODRIGUEZ</strong><span>Art Director</span></div></article>
           <article class="brands-card"><div class="brands-card-top"><span>★★★★★</span><span>4/5</span></div><blockquote>&ldquo;Upload to complete moodboard in seconds. No complex workflows or manual setup.&rdquo;</blockquote><div class="brands-card-person"><strong>• &nbsp; NINA PETERSEN</strong><span>Lead designer</span></div></article>
         </div>
         <div class="brands-footer-cta"><div><div class="brands-footer-stars">★★★★★</div><p>We&apos;ve worked with over 200 clients who trust us with their brand. Want to see what we could do for you?</p></div><a class="btn primary" href="#contact">LET&apos;S TALK <span>↗</span></a></div>
       </section>
+      <section class="swatch-showcase" aria-label="Explore our creative disciplines">
+        <div class="swatch-showcase-heading"><span>OUR CREATIVE RANGE</span><span>01 — 05</span></div>
+        <div class="swa" data-dir="auto" aria-label="Creative services accordion">
+          <article class="swa-panel swa-strategy" style="--swa-image:url('https://framerusercontent.com/images/3reGuWpWiARbmfYlToDFtUzhTc.png')">
+            <button class="swa-trigger" type="button" aria-expanded="false" aria-controls="swa-panel-strategy"><span class="swa-index">01</span><span class="swa-closed-title">Strategy</span><span class="swa-plus" aria-hidden="true">+</span></button>
+            <div class="swa-copy" id="swa-panel-strategy"><div class="swa-tags"><span>Positioning</span><span>Research</span><span>Direction</span></div><div class="swa-copy-bottom"><h2>Strategy</h2><p>Find the clearest story for your brand and a confident direction for what comes next.</p><a href="#workflow">Explore strategy <span aria-hidden="true">→</span></a></div></div>
+          </article>
+          <article class="swa-panel swa-identity is-active" style="--swa-image:url('https://framerusercontent.com/images/75Ki88np43SW5rT6tbMlWFiQ.png')">
+            <button class="swa-trigger" type="button" aria-expanded="true" aria-controls="swa-panel-identity"><span class="swa-index">02</span><span class="swa-closed-title">Identity</span><span class="swa-plus" aria-hidden="true">+</span></button>
+            <div class="swa-copy" id="swa-panel-identity"><div class="swa-tags"><span>Logo</span><span>Typography</span><span>Guidelines</span></div><div class="swa-copy-bottom"><h2>Identity</h2><p>A brand that feels like you. Logo, type, colour and tone built as one calm, recognisable system.</p><a href="./projects/index.html">Explore identity <span aria-hidden="true">→</span></a></div></div>
+          </article>
+          <article class="swa-panel swa-digital" style="--swa-image:url('https://framerusercontent.com/images/xh2fVOTsCE3Sh3cD7Cy9JcjItI.png')">
+            <button class="swa-trigger" type="button" aria-expanded="false" aria-controls="swa-panel-digital"><span class="swa-index">03</span><span class="swa-closed-title">Digital</span><span class="swa-plus" aria-hidden="true">+</span></button>
+            <div class="swa-copy" id="swa-panel-digital"><div class="swa-tags"><span>Web</span><span>Product</span><span>Experience</span></div><div class="swa-copy-bottom"><h2>Digital</h2><p>Thoughtful websites and digital experiences made to feel clear, useful, and distinctly yours.</p><a href="./projects/index.html">Explore digital work <span aria-hidden="true">→</span></a></div></div>
+          </article>
+          <article class="swa-panel swa-motion" style="--swa-image:url('https://framerusercontent.com/images/daFBEqvccTmPwLaEvq3zBCJm8PU.png')">
+            <button class="swa-trigger" type="button" aria-expanded="false" aria-controls="swa-panel-motion"><span class="swa-index">04</span><span class="swa-closed-title">Motion</span><span class="swa-plus" aria-hidden="true">+</span></button>
+            <div class="swa-copy" id="swa-panel-motion"><div class="swa-tags"><span>Film</span><span>Photography</span><span>Campaigns</span></div><div class="swa-copy-bottom"><h2>Motion</h2><p>Photography and film with a point of view, crafted to make your story memorable.</p><a href="#services">Explore production <span aria-hidden="true">→</span></a></div></div>
+          </article>
+          <article class="swa-panel swa-growth" style="--swa-image:url('https://framerusercontent.com/images/8nrq8L6qbVPhVhBA9TMoevGLql4.webp')">
+            <button class="swa-trigger" type="button" aria-expanded="false" aria-controls="swa-panel-growth"><span class="swa-index">05</span><span class="swa-closed-title">Growth</span><span class="swa-plus" aria-hidden="true">+</span></button>
+            <div class="swa-copy" id="swa-panel-growth"><div class="swa-tags"><span>Content</span><span>Marketing</span><span>Launch</span></div><div class="swa-copy-bottom"><h2>Growth</h2><p>Build momentum with consistent content and creative that keeps your brand moving.</p><a href="#contact">Let&apos;s grow <span aria-hidden="true">→</span></a></div></div>
+          </article>
+        </div>
+      </section>
       <section id="pricing" class="pricing-section" aria-labelledby="pricing-title">
         <div class="pricing-header">
-          <div class="pricing-title-row"><h2 id="pricing-title">PRICING</h2><span>(2)</span></div>
+          <div class="pricing-title-row"><h2 id="pricing-title">PRICING</h2><span>(3)</span></div>
           <p>We keep pricing clear and fully transparent. Final cost depends on scope and timeline.</p>
         </div>
         <div class="pricing-cards">
           <article class="pricing-card">
-            <div class="pricing-card-header"><div class="plan-title-row"><h3>STARTUP DIGITAL LAUNCH KIT</h3><span class="availability-dot">●</span><span class="availability-label">Limited availability</span></div><p>Ideal for brands that need regular creative work.</p></div>
-            <div class="card-price"><strong>$618</strong><span>/month</span></div>
+            <div class="pricing-card-header"><div class="plan-title-row"><h3>STARTER</h3></div><div class="card-price"><strong>KES 80,000</strong><span>/project</span></div><p>For brands ready to build a clear digital foundation.</p></div>
             <ul class="features"><li>Standard website development</li><li>AI chatbot integration</li><li>Landing page creation</li><li>Zoom meetings and live events</li></ul>
             <a class="pricing-cta" href="#contact">START MONTHLY PLAN <span aria-hidden="true">↗</span></a>
           </article>
           <article class="pricing-card popular">
-            <div class="popular-tag">POPULAR</div>
-            <div class="pricing-card-header"><h3>PREMIUM DIGITAL MARKET PRO</h3><p>We&apos;ll tailor the quote to your timeline and budget.</p></div>
-            <div class="card-price"><strong>$927</strong><span>/project</span></div>
+            <div class="pricing-card-header"><div class="plan-title-row"><h3>PROFESSIONAL</h3><span class="availability-label">POPULAR</span></div><div class="card-price"><strong>KES 120,000+</strong><span>/project</span></div><p>For growing teams ready for a fuller creative partnership.</p></div>
             <ul class="features"><li>Marketing video production</li><li>Professional modelling shoot</li><li>Advertisement campaign creation</li><li>Social media content package</li></ul>
             <a class="pricing-cta" href="#contact">START PROJECT <span aria-hidden="true">↗</span></a>
+          </article>
+          <article class="pricing-card enterprise">
+            <div class="pricing-card-header"><div class="plan-title-row"><h3>ENTERPRISE</h3></div><div class="card-price"><strong>Custom</strong><span></span></div><p>For larger teams and work shaped around your goals.</p></div>
+            <ul class="features"><li>Flexible scope and timeline</li><li>Dedicated creative direction</li><li>Custom project pricing</li></ul>
+            <a class="pricing-cta" href="#contact">INQUIRE ABOUT A PROJECT <span aria-hidden="true">↗</span></a>
           </article>
         </div>
         <div class="faq-section" id="faq">
@@ -363,6 +434,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jquery.ripples@0.6.3/dist/jquery.ripples.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/lenis@1.3.4/dist/lenis.min.js"></script>
-    <script src="script.js?v=20261005-mobile-inertia"></script>
+    <script src="script.js?v=20261016-shared-navbar-v1"></script>
   </body>
 </html>

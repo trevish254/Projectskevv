@@ -15,7 +15,7 @@ const initSmoothScroll = () => {
   const render = (time) => {
     const delta = Math.min(64, time - lastTime);
     lastTime = time;
-    const smoothing = 1 - Math.exp(-delta / 420);
+    const smoothing = 1 - Math.exp(-delta / 320);
     current += (target - current) * smoothing;
 
     if (Math.abs(target - current) < 0.15) {
@@ -35,10 +35,11 @@ const initSmoothScroll = () => {
   };
 
   window.addEventListener('wheel', (event) => {
-    if (event.ctrlKey || isNativeScrollTarget(event.target)) return;
+    const isMissionCardRegion = event.target?.closest?.('.mission-services-window');
+    if (event.ctrlKey || (isNativeScrollTarget(event.target) && !isMissionCardRegion)) return;
     event.preventDefault();
     current = window.scrollY;
-    target = clamp(target + event.deltaY * 0.92);
+    target = clamp(target + event.deltaY * 0.86);
     start();
   }, { passive: false });
 
@@ -68,7 +69,7 @@ const initSmoothScroll = () => {
 
   window.addEventListener('touchend', () => {
     if (touchY === null) return;
-    target = clamp(target + touchVelocity * 180);
+    target = clamp(target + touchVelocity * 140);
     touchY = null;
     lastTouchY = null;
     touchVelocity = 0;
@@ -91,6 +92,49 @@ const initSmoothScroll = () => {
 };
 
 initSmoothScroll();
+
+const initMissionHorizontalScroll = () => {
+  const section = document.querySelector('.mission-scroll');
+  const stage = section?.querySelector('.mission-scroll-stage');
+  const viewport = section?.querySelector('.mission-services-window');
+  const track = section?.querySelector('.mission-services-track');
+  const images = Array.from(section?.querySelectorAll('.mission-feature-image') || []);
+  const cards = Array.from(track?.querySelectorAll('.mission-service-card') || []);
+  if (!section || !stage || !viewport || !track) return;
+
+  let horizontalDistance = 0;
+  let frame = null;
+  const getScrollFactor = () => window.matchMedia('(max-width: 760px)').matches ? 6 : 1;
+  const setActiveImage = (index) => {
+    images.forEach((image, imageIndex) => image.classList.toggle('is-active', imageIndex === index));
+  };
+
+  const updatePosition = () => {
+    frame = null;
+    const progress = Math.max(0, Math.min(horizontalDistance, -section.getBoundingClientRect().top * getScrollFactor()));
+    track.style.transform = `translate3d(${-progress}px, 0, 0)`;
+    const cardWidth = cards[0]?.getBoundingClientRect().width || viewport.clientWidth;
+    setActiveImage(Math.min(cards.length - 1, Math.round(progress / cardWidth)));
+  };
+
+  const schedulePositionUpdate = () => {
+    if (frame === null) frame = window.requestAnimationFrame(updatePosition);
+  };
+
+  const measure = () => {
+    horizontalDistance = Math.max(0, track.scrollWidth - viewport.clientWidth);
+    section.style.height = `${stage.offsetHeight + horizontalDistance / getScrollFactor()}px`;
+    updatePosition();
+  };
+
+  window.addEventListener('scroll', schedulePositionUpdate, { passive: true });
+  window.addEventListener('resize', measure, { passive: true });
+  window.addEventListener('load', measure, { once: true });
+  setActiveImage(0);
+  measure();
+};
+
+initMissionHorizontalScroll();
 
 if (window.location.protocol === 'file:') {
   const filePath = decodeURIComponent(window.location.pathname).replace(/\\/g, '/');
@@ -147,7 +191,7 @@ window.projectskevvDb = createSupabaseRestClient({
 
 const isHomepage = Boolean(document.querySelector('.hero-container'));
 let homepagePricingSettings = null;
-const isHomepageLockedMedia = (media) => Boolean(media.closest('.footer-services, [class*="projects"], [class*="services"], [class*="journal"], a[href*="projects"], a[href*="services"], a[href*="journal"]'));
+const isHomepageLockedMedia = (media) => Boolean(media.closest('.mission-scroll, .footer-services, [class*="projects"], [class*="services"], [class*="journal"], a[href*="projects"], a[href*="services"], a[href*="journal"]'));
 const homepageMediaKey = (media) => {
   if (!media) return '';
   if (media.dataset.homeMediaKey) return media.dataset.homeMediaKey;
@@ -185,27 +229,98 @@ const loadHomepageMedia = async () => {
 };
 loadHomepageMedia();
 
+const initMediaViewer = () => {
+  const dialog = document.createElement('dialog');
+  dialog.className = 'media-viewer';
+  dialog.setAttribute('aria-label', 'Media viewer');
+  dialog.innerHTML = '<button class="media-viewer-close" type="button" aria-label="Close media viewer">×</button><div class="media-viewer-stage"></div>';
+  document.body.appendChild(dialog);
+  const stage = dialog.querySelector('.media-viewer-stage');
+  const closeButton = dialog.querySelector('.media-viewer-close');
+
+  const clearMedia = () => {
+    stage.replaceChildren();
+  };
+  closeButton.addEventListener('click', () => dialog.close());
+  dialog.addEventListener('click', (event) => {
+    if (event.target === dialog) dialog.close();
+  });
+  dialog.addEventListener('close', clearMedia);
+
+  document.addEventListener('click', (event) => {
+    const trigger = event.target.closest('.play-button, .brands-play');
+    if (!trigger) return;
+    const source = trigger.closest('.studio-media-image, .brands-featured-card')?.querySelector('video, img');
+    if (!source) return;
+
+    const sourceUrl = source.currentSrc || source.src;
+    if (!sourceUrl) return;
+    clearMedia();
+    const youtube = sourceUrl.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([\w-]{11})/i);
+    const vimeo = sourceUrl.match(/vimeo\.com\/(?:video\/)?(\d+)/i);
+    let media;
+    if (youtube || vimeo) {
+      media = document.createElement('iframe');
+      media.src = youtube
+        ? `https://www.youtube-nocookie.com/embed/${youtube[1]}?autoplay=1&rel=0`
+        : `https://player.vimeo.com/video/${vimeo[1]}?autoplay=1`;
+      media.title = 'Video player';
+      media.allow = 'autoplay; fullscreen; picture-in-picture';
+      media.allowFullscreen = true;
+    } else if (source.tagName.toLowerCase() === 'video' || /\.(mp4|webm|ogg|mov|m4v)(?:[?#].*)?$/i.test(sourceUrl)) {
+      media = document.createElement('video');
+      media.src = sourceUrl;
+      media.controls = true;
+      media.autoplay = true;
+      media.playsInline = true;
+      media.preload = 'auto';
+    } else {
+      media = document.createElement('img');
+      media.src = sourceUrl;
+      media.alt = source.alt || 'Featured media';
+    }
+    stage.appendChild(media);
+    if (!dialog.open) dialog.showModal();
+    if (media.tagName === 'VIDEO') media.play().catch(() => {});
+  });
+};
+initMediaViewer();
+
 const renderHomepagePricing = (plans) => {
   const container = document.querySelector('#pricing .pricing-cards');
   if (!container || !Array.isArray(plans)) return;
   container.innerHTML = '';
-  plans.forEach((plan, index) => {
+  const visiblePlans = plans.slice(0, 3);
+  if (visiblePlans.length < 3) {
+    visiblePlans.push({
+      id: 'enterprise-custom',
+      title: 'ENTERPRISE',
+      eyebrow: 'CUSTOM',
+      description: 'For bespoke creative partnerships and larger scopes.',
+      price: 'Custom',
+      price_unit: '',
+      features: ['Flexible scope and timeline', 'Dedicated creative direction', 'Custom project pricing'],
+      cta_label: 'INQUIRE ABOUT A PROJECT',
+      is_popular: false,
+    });
+  }
+  visiblePlans.forEach((plan, index) => {
     const card = document.createElement('article');
     card.className = `pricing-card${plan.is_popular ? ' popular' : ''}`;
     card.dataset.pricingId = plan.id || `pricing-plan-${index + 1}`;
-    if (plan.is_popular) { const popular = document.createElement('div'); popular.className = 'popular-tag'; popular.textContent = 'POPULAR'; card.appendChild(popular); }
     const header = document.createElement('div');
     header.className = 'pricing-card-header';
     const titleRow = document.createElement('div');
     titleRow.className = 'plan-title-row';
     const title = document.createElement('h3'); title.textContent = plan.title || 'Untitled plan'; titleRow.appendChild(title);
-    if (plan.eyebrow) { const eyebrow = document.createElement('span'); eyebrow.className = 'availability-label'; eyebrow.textContent = plan.eyebrow; titleRow.appendChild(eyebrow); }
+    if (plan.is_popular) { const eyebrow = document.createElement('span'); eyebrow.className = 'availability-label'; eyebrow.textContent = 'POPULAR'; titleRow.appendChild(eyebrow); }
     header.appendChild(titleRow);
-    const description = document.createElement('p'); description.textContent = plan.description || ''; header.appendChild(description); card.appendChild(header);
     const price = document.createElement('div'); price.className = 'card-price';
-    const amount = document.createElement('strong'); amount.textContent = plan.price || '$0';
-    const unit = document.createElement('span'); unit.textContent = plan.price_unit || '/project';
+    const amount = document.createElement('strong'); amount.textContent = plan.price || 'Custom';
+    const unit = document.createElement('span'); unit.textContent = plan.price_unit || '';
     price.append(amount, unit); card.appendChild(price);
+    header.appendChild(price);
+    const description = document.createElement('p'); description.textContent = plan.description || ''; header.appendChild(description); card.appendChild(header);
     const features = document.createElement('ul'); features.className = 'features';
     (Array.isArray(plan.features) ? plan.features : []).forEach((feature) => { const item = document.createElement('li'); item.textContent = feature; features.appendChild(item); });
     card.appendChild(features);
@@ -214,7 +329,7 @@ const renderHomepagePricing = (plans) => {
     container.appendChild(card);
   });
   const count = document.querySelector('#pricing .pricing-title-row span');
-  if (count) count.textContent = `(${homepagePricingSettings?.item_count ?? plans.length})`;
+  if (count) count.textContent = `(${visiblePlans.length})`;
   document.dispatchEvent(new CustomEvent('projectskevv:pricing-updated'));
 };
 const loadHomepagePricing = async () => {
@@ -499,6 +614,95 @@ if (isPublicProjectDetail) {
   renderProjectDetail();
 }
 
+const initMobileServiceStack = () => {
+  const list = document.querySelector('#services .services-list');
+  if (!list) return;
+
+  let frame = null;
+  const isMobile = () => window.matchMedia('(max-width: 760px)').matches;
+  const updateStack = () => {
+    frame = null;
+    const cards = Array.from(list.querySelectorAll('.service-item'));
+    if (!isMobile()) {
+      cards.forEach((card) => { card.style.removeProperty('--mobile-stack-offset'); });
+      return;
+    }
+
+    const stickyTop = 82;
+    cards.forEach((card) => {
+      const cardTop = card.getBoundingClientRect().top + window.scrollY - (parseFloat(card.style.getPropertyValue('--mobile-stack-offset')) || 0);
+      const offset = Math.max(0, window.scrollY + stickyTop - cardTop);
+      card.style.setProperty('--mobile-stack-offset', `${offset}px`);
+    });
+  };
+  const scheduleStackUpdate = () => {
+    if (frame === null) frame = window.requestAnimationFrame(updateStack);
+  };
+
+  window.addEventListener('scroll', scheduleStackUpdate, { passive: true });
+  window.addEventListener('resize', scheduleStackUpdate, { passive: true });
+  new MutationObserver(scheduleStackUpdate).observe(list, { childList: true });
+  window.addEventListener('load', scheduleStackUpdate, { once: true });
+  window.addEventListener('pageshow', scheduleStackUpdate);
+  scheduleStackUpdate();
+};
+
+initMobileServiceStack();
+
+const initSwatchAccordion = () => {
+  const section = document.querySelector('.swatch-showcase');
+  const accordion = section?.querySelector('.swa');
+  if (!section || !accordion) return;
+  const panels = Array.from(accordion.querySelectorAll('.swa-panel'));
+  const about = document.querySelector('#about');
+  const testimonials = document.querySelector('.brands-repositioned');
+  if (about && testimonials) testimonials.after(section, about);
+
+  let selectedIndex = Math.max(0, panels.findIndex((panel) => panel.classList.contains('is-active')));
+  const setActive = (index) => {
+    panels.forEach((panel, panelIndex) => {
+      const active = panelIndex === index;
+      panel.classList.toggle('is-active', active);
+      panel.querySelector('.swa-trigger')?.setAttribute('aria-expanded', String(active));
+    });
+  };
+  panels.forEach((panel, index) => {
+    const trigger = panel.querySelector('.swa-trigger');
+    trigger?.addEventListener('click', () => {
+      selectedIndex = index;
+      setActive(index);
+    });
+    panel.addEventListener('pointerenter', (event) => {
+      if (event.pointerType === 'mouse') setActive(index);
+    });
+    trigger?.addEventListener('focus', () => setActive(index));
+  });
+  accordion.addEventListener('pointerleave', (event) => {
+    if (event.pointerType === 'mouse') setActive(selectedIndex);
+  });
+  accordion.addEventListener('focusout', (event) => {
+    if (!accordion.contains(event.relatedTarget)) setActive(selectedIndex);
+  });
+};
+initSwatchAccordion();
+
+document.querySelectorAll('.menu-grid-section').forEach((section) => {
+  section.addEventListener('click', (event) => {
+    const button = event.target.closest('.menu-grid-row');
+    if (!button) return;
+    const item = button.closest('.menu-grid-item');
+    const shouldOpen = !item.classList.contains('is-open');
+    section.querySelectorAll('.menu-grid-item.is-open').forEach((openItem) => {
+      openItem.classList.remove('is-open');
+      openItem.querySelector('.menu-grid-row')?.setAttribute('aria-expanded', 'false');
+    });
+    if (shouldOpen) {
+      item.classList.add('is-open');
+      button.setAttribute('aria-expanded', 'true');
+    }
+  });
+});
+
 const serviceListing = document.querySelector('.services-page .services-list');
 if (serviceListing) {
   const renderServiceListing = async () => {
@@ -655,7 +859,7 @@ if (isPublicJournalArticle) {
 }
 
 const hero = document.querySelector('.hero-container');
-const background = document.querySelector('.background-wrapper img');
+const background = document.querySelector('.background-wrapper img, .background-wrapper video');
 const siteHeader = document.querySelector('.site-header');
 
 const initHeroRipple = () => {
@@ -706,6 +910,50 @@ document.querySelectorAll('.services-page .service-item').forEach((serviceItem) 
 
 if (siteHeader) {
   const desktopNav = siteHeader.querySelector('.site-nav');
+  const navCaptions = {
+    projects: 'Selected work',
+    journal: 'Notes & ideas',
+    about: 'Meet the studio',
+    services: 'Work with us',
+    contact: 'Get in touch',
+  };
+  if (!siteHeader.querySelector('.header-studio-note')) {
+    const studioNote = document.createElement('p');
+    studioNote.className = 'header-studio-note';
+    studioNote.textContent = 'A Nairobi studio crafting thoughtful brands and digital experiences.';
+    siteHeader.insertBefore(studioNote, desktopNav || null);
+  }
+  if (desktopNav) {
+    const currentPath = (path) => path.replace(/index\.html$/i, '').replace(/\/+$/, '') || '/';
+    desktopNav.querySelectorAll('a').forEach((link) => {
+      const existingTitle = link.querySelector('.nav-main > span:first-child');
+      const label = (existingTitle?.textContent || link.textContent).replace(/[→↗]/g, '').trim();
+      const key = label.toLowerCase();
+      if (!existingTitle) {
+        const caption = document.createElement('span');
+        caption.className = 'nav-caption';
+        caption.textContent = navCaptions[key] || '';
+        const main = document.createElement('span');
+        main.className = 'nav-main';
+        const title = document.createElement('span');
+        title.textContent = label;
+        const arrow = document.createElement('span');
+        arrow.className = 'nav-arrow';
+        arrow.setAttribute('aria-hidden', 'true');
+        arrow.textContent = '→';
+        main.append(title, arrow);
+        link.replaceChildren(caption, main);
+      }
+      const isCurrent = currentPath(new URL(link.href, location.href).pathname) === currentPath(location.pathname);
+      if (isCurrent) {
+        link.setAttribute('aria-current', 'page');
+        link.classList.add('is-current');
+      } else {
+        link.removeAttribute('aria-current');
+        link.classList.remove('is-current');
+      }
+    });
+  }
   const themeButton = document.createElement('button');
   themeButton.className = 'theme-toggle';
   themeButton.type = 'button';
@@ -747,6 +995,31 @@ if (siteHeader) {
   const mobileNav = desktopNav?.cloneNode(true);
   if (mobileNav) {
     mobileNav.className = 'mobile-sidebar-nav';
+    mobileNav.querySelectorAll('a').forEach((link) => {
+      const title = link.querySelector('.nav-main > span:first-child');
+      const descriptor = link.querySelector('.nav-caption');
+      const arrow = link.querySelector('.nav-arrow');
+      const label = title?.textContent.trim() || link.textContent.trim().replace(/[→↗].*$/, '').trim();
+      const detail = descriptor?.textContent.trim();
+      link.replaceChildren();
+      const copy = document.createElement('span');
+      copy.className = 'mobile-nav-copy';
+      if (detail) {
+        const eyebrow = document.createElement('span');
+        eyebrow.className = 'mobile-nav-eyebrow';
+        eyebrow.textContent = detail;
+        copy.appendChild(eyebrow);
+      }
+      const heading = document.createElement('span');
+      heading.className = 'mobile-nav-title';
+      heading.textContent = label;
+      copy.appendChild(heading);
+      const linkArrow = document.createElement('span');
+      linkArrow.className = 'mobile-nav-arrow';
+      linkArrow.setAttribute('aria-hidden', 'true');
+      linkArrow.textContent = arrow?.textContent.trim() || '→';
+      link.append(copy, linkArrow);
+    });
     sidebar.appendChild(mobileNav);
   }
   document.body.append(backdrop, sidebar);
@@ -1194,7 +1467,7 @@ if (cmsPreview) {
     element.dataset.editorLabel = cmsEditorLabel(element);
   });
 
-  const cmsLockedMedia = (element) => isLegalPage ? false : Boolean(element.closest('.footer-services, [class*="projects"], [class*="services"], [class*="journal"], a[href*="projects"], a[href*="services"], a[href*="journal"]'));
+  const cmsLockedMedia = (element) => isLegalPage ? false : Boolean(element.closest('.mission-scroll, .footer-services, [class*="projects"], [class*="services"], [class*="journal"], a[href*="projects"], a[href*="services"], a[href*="journal"]'));
   const cmsLockedContent = (element) => isLegalPage ? false : Boolean(element.closest('#projects, #services, #journal, .featured-project, .footer-services, [class*="projects"], [class*="services"], [class*="journal"], a[href*="projects"], a[href*="services"], a[href*="journal"]'));
   const cmsTextSelector = 'h1, h2, h3, h4, h5, h6, p, span, a, button, li, label, summary, dd';
   const cmsMediaEditor = document.createElement('aside');
