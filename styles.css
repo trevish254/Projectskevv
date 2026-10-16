@@ -2391,6 +2391,36 @@ body.project-detail-page .project-achievement-row p:not(.project-achievement-nam
   .project-achievements-media { aspect-ratio: 1.18 / 1; border-radius: 6px; }
 }
 
+/* Keep the full project detail story on the dark surface when dark mode is active. */
+body[data-theme="dark"].project-detail-page {
+  background: #171716 !important;
+  color: #eee9e0 !important;
+}
+body[data-theme="dark"].project-detail-page main > section,
+body[data-theme="dark"].project-detail-page main > section.project-details-section {
+  background: #171716 !important;
+  color: #eee9e0 !important;
+}
+body[data-theme="dark"].project-detail-page .project-details-section,
+body[data-theme="dark"].project-detail-page .project-details-section * {
+  border-color: rgba(238,233,224,.2) !important;
+}
+body[data-theme="dark"].project-detail-page .project-overview-label,
+body[data-theme="dark"].project-detail-page .project-insight-copy,
+body[data-theme="dark"].project-detail-page .project-challenge-description,
+body[data-theme="dark"].project-detail-page .project-challenge-questions li,
+body[data-theme="dark"].project-detail-page .project-achievement-row p:not(.project-achievement-name) {
+  color: #aaa198 !important;
+}
+body[data-theme="dark"].project-detail-page .project-summary,
+body[data-theme="dark"].project-detail-page .project-insights h2,
+body[data-theme="dark"].project-detail-page .project-insight-title,
+body[data-theme="dark"].project-detail-page .project-challenge-copy h2,
+body[data-theme="dark"].project-detail-page .project-achievement-list h2,
+body[data-theme="dark"].project-detail-page .project-achievement-row .project-achievement-name {
+  color: #eee9e0 !important;
+}
+
 /* Menu-to-grid service showcase, adapted from the supplied preview. */
 .menu-grid-section { background: #101114; color: #f4f4f1; padding: 56px 40px 150px; }
 .menu-grid-heading { align-items: flex-start; display: flex; justify-content: space-between; margin: 0 auto 30px; max-width: 1080px; }
