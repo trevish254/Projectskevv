@@ -7,12 +7,17 @@ const initSmoothScroll = () => {
   let lastTouchY = null;
   let touchVelocity = 0;
   let lastTouchTime = 0;
+  let paused = false;
 
   const getLimit = () => Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
   const clamp = (value) => Math.min(getLimit(), Math.max(0, value));
   const isNativeScrollTarget = (element) => element?.closest?.('input, textarea, select, [contenteditable="true"], [data-lenis-prevent]');
 
   const render = (time) => {
+    if (paused) {
+      frame = null;
+      return;
+    }
     const delta = Math.min(64, time - lastTime);
     lastTime = time;
     const smoothing = 1 - Math.exp(-delta / 320);
@@ -35,6 +40,7 @@ const initSmoothScroll = () => {
   };
 
   window.addEventListener('wheel', (event) => {
+    if (paused) return;
     const isMissionCardRegion = event.target?.closest?.('.mission-services-window');
     if (event.ctrlKey || (isNativeScrollTarget(event.target) && !isMissionCardRegion)) return;
     event.preventDefault();
@@ -44,6 +50,7 @@ const initSmoothScroll = () => {
   }, { passive: false });
 
   window.addEventListener('touchstart', (event) => {
+    if (paused) return;
     if (isNativeScrollTarget(event.target) || !event.touches.length) return;
     touchY = event.touches[0].clientY;
     lastTouchY = touchY;
@@ -54,6 +61,7 @@ const initSmoothScroll = () => {
   }, { passive: true });
 
   window.addEventListener('touchmove', (event) => {
+    if (paused) return;
     if (touchY === null || isNativeScrollTarget(event.target) || !event.touches.length) return;
     const nextY = event.touches[0].clientY;
     const now = performance.now();
@@ -68,6 +76,7 @@ const initSmoothScroll = () => {
   }, { passive: false });
 
   window.addEventListener('touchend', () => {
+    if (paused) return;
     if (touchY === null) return;
     target = clamp(target + touchVelocity * 140);
     touchY = null;
@@ -77,6 +86,7 @@ const initSmoothScroll = () => {
   }, { passive: true });
 
   window.addEventListener('scroll', () => {
+    if (paused) return;
     if (frame === null) {
       current = window.scrollY;
       target = current;
@@ -84,7 +94,21 @@ const initSmoothScroll = () => {
   }, { passive: true });
 
   window.projectskevvLenis = {
+    pause: () => {
+      paused = true;
+      if (frame !== null) window.cancelAnimationFrame(frame);
+      frame = null;
+      current = window.scrollY;
+      target = current;
+    },
+    resume: (position = window.scrollY) => {
+      current = Math.max(0, Number(position) || 0);
+      target = current;
+      window.scrollTo(0, current);
+      paused = false;
+    },
     scrollTo: (value) => {
+      if (paused) return;
       target = typeof value === 'number' ? clamp(value) : clamp(document.querySelector(value)?.offsetTop || 0);
       start();
     }
@@ -135,6 +159,103 @@ const initMissionHorizontalScroll = () => {
 };
 
 initMissionHorizontalScroll();
+
+const initScrollMilestones = () => {
+  const section = document.querySelector('.milestone-section');
+  const pin = section?.querySelector('.milestone-inner');
+  const map = section?.querySelector('.milestone-map');
+  const svg = map?.querySelector('.milestone-path');
+  const paths = Array.from(svg?.querySelectorAll('path') || []);
+  const progressPaths = paths.filter((path) => path.classList.contains('milestone-path-progress'));
+  const nodes = Array.from(map?.querySelectorAll('.milestone-node') || []);
+  const steps = Array.from(map?.querySelectorAll('.milestone-step') || []);
+  if (!section || !pin || !map || !svg || !progressPaths.length || !steps.length) return;
+
+  const desktopPath = 'M60 300 C155 210 215 100 300 125 S445 345 520 270 S675 95 760 130 S930 350 1000 270 S1090 135 1140 60';
+  const mobilePath = 'M190 84 C390 150 50 240 190 288 S390 420 190 492 S50 630 190 696 S390 800 190 900 S80 1030 190 1104';
+  const mobileNodeY = [7, 24, 41, 58, 75, 92];
+  const desktopX = [5, 25, 43.333, 63.333, 83.333, 95];
+  const desktopY = [68.182, 28.409, 61.364, 29.545, 61.364, 13.636];
+  let pathLength = 0;
+  let frame = null;
+  let mobile = window.matchMedia('(max-width: 760px)').matches;
+
+  const setGeometry = () => {
+    mobile = window.matchMedia('(max-width: 760px)').matches;
+    svg.setAttribute('viewBox', mobile ? '0 0 1200 1200' : '0 0 1200 440');
+    paths.forEach((path) => path.setAttribute('d', mobile ? mobilePath : desktopPath));
+    if (mobile) {
+      nodes.forEach((item, index) => {
+        item.style.setProperty('--milestone-x', '16%');
+        item.style.setProperty('--milestone-y', `${mobileNodeY[index]}%`);
+      });
+      steps.forEach((item, index) => {
+        item.style.setProperty('--milestone-x', '27%');
+        item.style.setProperty('--milestone-y', `${mobileNodeY[index]}%`);
+      });
+    } else {
+      nodes.forEach((item, index) => {
+        item.style.setProperty('--milestone-x', `${desktopX[index]}%`);
+        item.style.setProperty('--milestone-y', `${desktopY[index]}%`);
+      });
+      steps.forEach((item, index) => {
+        item.style.setProperty('--milestone-x', `${desktopX[index]}%`);
+        item.style.setProperty('--milestone-y', `${desktopY[index]}%`);
+      });
+    }
+    pathLength = paths[0].getTotalLength();
+    progressPaths.forEach((path) => {
+      path.style.strokeDasharray = `${pathLength} ${pathLength}`;
+      path.style.strokeDashoffset = String(pathLength);
+    });
+    update();
+  };
+
+  steps.forEach((step) => {
+    const paragraph = step.querySelector('p');
+    if (!paragraph) return;
+    const words = paragraph.textContent.trim().split(/\s+/);
+    paragraph.replaceChildren(...words.map((text, index) => {
+      const word = document.createElement('span');
+      word.className = 'milestone-word';
+      word.dataset.wordIndex = String(index);
+      word.textContent = text;
+      return word;
+    }));
+  });
+
+  const clamp01 = (value) => Math.max(0, Math.min(1, value));
+  const update = () => {
+    frame = null;
+    if (!pathLength) return;
+    const rect = section.getBoundingClientRect();
+    const stickyTravel = Math.max(1, section.offsetHeight - pin.offsetHeight);
+    const progress = clamp01(-rect.top / stickyTravel);
+    progressPaths.forEach((path) => { path.style.strokeDashoffset = String(pathLength * (1 - progress)); });
+    nodes.forEach((node) => {
+      node.classList.toggle('is-lit', progress > 0 && progress >= Number(node.dataset.nodeProgress || 0));
+    });
+    steps.forEach((step) => {
+      const milestone = Number(step.dataset.milestoneProgress || 0);
+      const pointDistance = 1 / Math.max(1, steps.length - 1);
+      const revealProgress = progress > 0 ? clamp01((progress - (milestone - pointDistance)) / pointDistance) : 0;
+      step.classList.toggle('is-active', progress > 0 && progress >= milestone - .025);
+      const words = Array.from(step.querySelectorAll('.milestone-word'));
+      words.forEach((word, index) => {
+        word.classList.toggle('is-revealed', revealProgress >= (index + 1) / words.length);
+      });
+    });
+  };
+
+  const scheduleUpdate = () => {
+    if (frame === null) frame = window.requestAnimationFrame(update);
+  };
+  window.addEventListener('scroll', scheduleUpdate, { passive: true });
+  window.addEventListener('resize', setGeometry, { passive: true });
+  setGeometry();
+};
+
+initScrollMilestones();
 
 if (window.location.protocol === 'file:') {
   const filePath = decodeURIComponent(window.location.pathname).replace(/\\/g, '/');
@@ -257,6 +378,8 @@ const initMediaViewer = () => {
   const dialog = document.createElement('dialog');
   dialog.className = 'media-viewer';
   dialog.setAttribute('aria-label', 'Media viewer');
+  dialog.setAttribute('tabindex', '-1');
+  dialog.setAttribute('autofocus', '');
   dialog.innerHTML = '<button class="media-viewer-close" type="button" aria-label="Close media viewer">×</button><div class="media-viewer-stage"></div>';
   document.body.appendChild(dialog);
   const stage = dialog.querySelector('.media-viewer-stage');
@@ -265,15 +388,29 @@ const initMediaViewer = () => {
   const clearMedia = () => {
     stage.replaceChildren();
   };
+  let returnScrollPosition = 0;
+  const resumePageScroll = () => {
+    const restore = () => {
+      window.projectskevvLenis?.resume(returnScrollPosition);
+      // Native dialog close can apply its own scroll restoration after the
+      // close event, so reassert the saved position on the following frame.
+      window.requestAnimationFrame(() => window.projectskevvLenis?.resume(returnScrollPosition));
+    };
+    window.setTimeout(restore, 0);
+  };
   closeButton.addEventListener('click', () => dialog.close());
   dialog.addEventListener('click', (event) => {
     if (event.target === dialog) dialog.close();
   });
-  dialog.addEventListener('close', clearMedia);
+  dialog.addEventListener('close', () => {
+    clearMedia();
+    resumePageScroll();
+  });
 
   document.addEventListener('click', (event) => {
     const trigger = event.target.closest('.play-button, .brands-play');
     if (!trigger) return;
+    event.preventDefault();
     const source = trigger.closest('.studio-media-image, .brands-featured-card')?.querySelector('video, img');
     if (!source) return;
 
@@ -304,7 +441,18 @@ const initMediaViewer = () => {
       media.alt = source.alt || 'Featured media';
     }
     stage.appendChild(media);
-    if (!dialog.open) dialog.showModal();
+    if (!dialog.open) {
+      returnScrollPosition = window.scrollY;
+      window.projectskevvLenis?.pause();
+      try {
+        dialog.showModal();
+        dialog.focus({ preventScroll: true });
+      } catch (error) {
+        window.projectskevvLenis?.resume(returnScrollPosition);
+        console.error('Could not open media viewer:', error);
+        return;
+      }
+    }
     if (media.tagName === 'VIDEO') media.play().catch(() => {});
   });
 };
@@ -1224,6 +1372,51 @@ document.querySelectorAll('.service-item, .footer-services a').forEach((serviceI
     preview = null;
   });
 });
+
+// A negative-exposure lens follows the pointer over selected homepage sections.
+// Re-check on scroll so it activates as a section moves under a still pointer.
+const lensSections = document.querySelectorAll('#projects, #journal');
+if (lensSections.length && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+  const lens = document.createElement('div');
+  lens.className = 'negative-lens-cursor';
+  lens.setAttribute('aria-hidden', 'true');
+  document.body.appendChild(lens);
+
+  let pointerX = -1;
+  let pointerY = -1;
+  let lensActive = false;
+  let scrollCheckQueued = false;
+
+  const setLensActive = (active) => {
+    if (lensActive === active) return;
+    lensActive = active;
+    lens.classList.toggle('is-visible', active);
+    document.body.classList.toggle('has-negative-lens', active);
+  };
+
+  const updateLensPosition = (event) => {
+    pointerX = event.clientX;
+    pointerY = event.clientY;
+    lens.style.left = `${pointerX}px`;
+    lens.style.top = `${pointerY}px`;
+    setLensActive(Boolean(event.target.closest?.('#projects, #journal')));
+  };
+
+  lensSections.forEach((section) => {
+    section.addEventListener('pointerenter', updateLensPosition);
+    section.addEventListener('pointermove', updateLensPosition);
+    section.addEventListener('pointerleave', () => setLensActive(false));
+  });
+
+  window.addEventListener('scroll', () => {
+    if (scrollCheckQueued || pointerX < 0 || pointerY < 0) return;
+    scrollCheckQueued = true;
+    window.requestAnimationFrame(() => {
+      scrollCheckQueued = false;
+      setLensActive(Boolean(document.elementFromPoint(pointerX, pointerY)?.closest('#projects, #journal')));
+    });
+  }, { passive: true });
+}
 
 const countElements = document.querySelectorAll('[data-count]');
 const countSection = document.querySelector('.studio-section, .contact-stats-section, .about-team-section');
