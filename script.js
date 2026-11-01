@@ -12,6 +12,12 @@ const initSmoothScroll = () => {
   const getLimit = () => Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
   const clamp = (value) => Math.min(getLimit(), Math.max(0, value));
   const isNativeScrollTarget = (element) => element?.closest?.('input, textarea, select, [contenteditable="true"], [data-lenis-prevent]');
+  const syncToNativeScroll = () => {
+    if (frame !== null) window.cancelAnimationFrame(frame);
+    frame = null;
+    current = window.scrollY;
+    target = current;
+  };
 
   const render = (time) => {
     if (paused) {
@@ -41,8 +47,7 @@ const initSmoothScroll = () => {
 
   window.addEventListener('wheel', (event) => {
     if (paused) return;
-    const isMissionCardRegion = event.target?.closest?.('.mission-services-window');
-    if (event.ctrlKey || (isNativeScrollTarget(event.target) && !isMissionCardRegion)) return;
+    if (event.ctrlKey) return;
     event.preventDefault();
     current = window.scrollY;
     target = clamp(target + event.deltaY * 0.86);
@@ -51,7 +56,14 @@ const initSmoothScroll = () => {
 
   window.addEventListener('touchstart', (event) => {
     if (paused) return;
-    if (isNativeScrollTarget(event.target) || !event.touches.length) return;
+    if (isNativeScrollTarget(event.target)) {
+      syncToNativeScroll();
+      touchY = null;
+      lastTouchY = null;
+      touchVelocity = 0;
+      return;
+    }
+    if (!event.touches.length) return;
     touchY = event.touches[0].clientY;
     lastTouchY = touchY;
     touchVelocity = 0;
@@ -62,7 +74,14 @@ const initSmoothScroll = () => {
 
   window.addEventListener('touchmove', (event) => {
     if (paused) return;
-    if (touchY === null || isNativeScrollTarget(event.target) || !event.touches.length) return;
+    if (isNativeScrollTarget(event.target)) {
+      syncToNativeScroll();
+      touchY = null;
+      lastTouchY = null;
+      touchVelocity = 0;
+      return;
+    }
+    if (touchY === null || !event.touches.length) return;
     const nextY = event.touches[0].clientY;
     const now = performance.now();
     const elapsed = Math.max(1, now - lastTouchTime);
