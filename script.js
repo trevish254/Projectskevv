@@ -53,7 +53,7 @@ const initSmoothScroll = () => {
   };
 
   window.addEventListener('scroll', () => {
-    if (!paused && frame === null) syncToNativeScroll();
+    if (!paused && smoothScrollMedia.matches && frame === null) syncToNativeScroll();
   }, { passive: true });
   window.addEventListener('resize', syncInputMode, { passive: true });
   smoothScrollMedia.addEventListener?.('change', syncInputMode);
@@ -97,16 +97,20 @@ const initMissionHorizontalScroll = () => {
 
   let horizontalDistance = 0;
   let frame = null;
-  const getScrollFactor = () => window.matchMedia('(max-width: 760px)').matches ? 6 : 1;
+  const isMobile = () => window.matchMedia('(max-width: 760px)').matches;
   const setActiveImage = (index) => {
     images.forEach((image, imageIndex) => image.classList.toggle('is-active', imageIndex === index));
   };
 
   const updatePosition = () => {
     frame = null;
-    const progress = Math.max(0, Math.min(horizontalDistance, -section.getBoundingClientRect().top * getScrollFactor()));
-    track.style.transform = `translate3d(${-progress}px, 0, 0)`;
     const cardWidth = cards[0]?.getBoundingClientRect().width || viewport.clientWidth;
+    if (isMobile()) {
+      setActiveImage(Math.min(cards.length - 1, Math.round(viewport.scrollLeft / cardWidth)));
+      return;
+    }
+    const progress = Math.max(0, Math.min(horizontalDistance, -section.getBoundingClientRect().top));
+    track.style.transform = `translate3d(${-progress}px, 0, 0)`;
     setActiveImage(Math.min(cards.length - 1, Math.round(progress / cardWidth)));
   };
 
@@ -116,11 +120,19 @@ const initMissionHorizontalScroll = () => {
 
   const measure = () => {
     horizontalDistance = Math.max(0, track.scrollWidth - viewport.clientWidth);
-    section.style.height = `${stage.offsetHeight + horizontalDistance / getScrollFactor()}px`;
+    if (isMobile()) {
+      section.style.height = 'auto';
+      track.style.transform = 'none';
+    } else {
+      section.style.height = `${stage.offsetHeight + horizontalDistance}px`;
+    }
     updatePosition();
   };
 
-  window.addEventListener('scroll', schedulePositionUpdate, { passive: true });
+  window.addEventListener('scroll', () => {
+    if (!isMobile()) schedulePositionUpdate();
+  }, { passive: true });
+  viewport.addEventListener('scroll', schedulePositionUpdate, { passive: true });
   window.addEventListener('resize', measure, { passive: true });
   window.addEventListener('load', measure, { once: true });
   setActiveImage(0);
@@ -197,6 +209,15 @@ const initScrollMilestones = () => {
   const update = () => {
     frame = null;
     if (!pathLength) return;
+    if (mobile) {
+      progressPaths.forEach((path) => { path.style.strokeDashoffset = '0'; });
+      nodes.forEach((node) => node.classList.add('is-lit'));
+      steps.forEach((step) => {
+        step.classList.add('is-active');
+        step.querySelectorAll('.milestone-word').forEach((word) => word.classList.add('is-revealed'));
+      });
+      return;
+    }
     const rect = section.getBoundingClientRect();
     const stickyTravel = Math.max(1, section.offsetHeight - pin.offsetHeight);
     const progress = clamp01(-rect.top / stickyTravel);
@@ -217,7 +238,7 @@ const initScrollMilestones = () => {
   };
 
   const scheduleUpdate = () => {
-    if (frame === null) frame = window.requestAnimationFrame(update);
+    if (!mobile && frame === null) frame = window.requestAnimationFrame(update);
   };
   window.addEventListener('scroll', scheduleUpdate, { passive: true });
   window.addEventListener('resize', setGeometry, { passive: true });

@@ -89,16 +89,19 @@ html.db-hydrating:not([data-cms-preview]) .db-content-ready {
 .proof-logo-script { color: #7a5c2b; font-family: Georgia, serif; font-size: 30px; grid-column: 3; grid-row: 2; letter-spacing: -.08em; }
 
 @media (max-width: 760px) {
-  .milestone-section { height: 260svh; }
-  .milestone-inner { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); min-width: 0; padding: 14px 16px; }
+  .milestone-section { height: auto; }
+  .milestone-inner { display: block; height: auto; min-height: 100svh; min-width: 0; padding: 48px 16px 36px; position: relative; }
   .milestone-heading { text-align: left; }
   .milestone-heading h2 { font-size: clamp(34px, 9vw, 46px); margin-left: 0; }
-  .milestone-map { height: min(68svh, 540px); margin-top: 14px; min-width: 0; }
+  .milestone-map { height: min(68svh, 540px); margin-top: 14px; min-height: 440px; min-width: 0; }
+  .milestone-path-progress { filter: none; }
+  .milestone-node { transition: none; }
   .milestone-step,
   .milestone-step.is-above,
-  .milestone-step.is-below { box-sizing: border-box; left: 27% !important; max-width: min(250px, calc(100vw - 174px)); min-width: 0; text-align: left; transform: translateY(-50%); width: min(68vw, 250px); }
+  .milestone-step.is-below { box-sizing: border-box; left: 27% !important; max-width: min(250px, calc(100vw - 174px)); min-width: 0; opacity: 1; text-align: left; transform: translateY(-50%); transition: none; width: min(68vw, 250px); }
   .milestone-step h3 { font-size: 17px; margin-bottom: 3px; }
   .milestone-step p { font-size: 12px; line-height: 1.25; max-width: 100%; white-space: normal; }
+  .milestone-word { opacity: 1; transition: none; }
   .who-we-are-section { gap: 82px; padding: 84px 18px 96px; }
   .who-we-are-content { display: block; }
   .who-we-are-label { margin-bottom: 30px; }
@@ -555,10 +558,9 @@ body {
     height: 100vh;
     height: 100dvh;
     min-height: 600px;
-    overflow: hidden;
+    overflow: visible;
     padding-top: 58px;
-    position: sticky;
-    top: 0;
+    position: relative;
   }
   .mission-copy {
     display: grid;
@@ -581,10 +583,13 @@ body {
     grid-row: 2;
     height: 100%;
     min-height: 0;
-    overflow: hidden;
-    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
   }
-  .mission-services-track { transform: translate3d(0, 0, 0); }
+  .mission-services-track { transform: none; will-change: auto; }
   .mission-service-card {
     box-sizing: border-box;
     display: grid;
@@ -592,6 +597,7 @@ body {
     grid-template-rows: auto minmax(0, 1fr) auto auto;
     min-height: 0;
     padding: 16px 16px 20px;
+    scroll-snap-align: start;
     width: 78vw;
   }
   .mission-service-number { font-size: clamp(110px, 36vw, 180px); grid-row: 1; }
