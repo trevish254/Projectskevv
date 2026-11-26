@@ -919,16 +919,12 @@ const serviceListing = document.querySelector('.services-page .services-list');
 if (serviceListing) {
   const renderServiceListing = async () => {
     try {
-      const services = await window.projectskevvDb.from('service_posts').select('id,title,slug,description,image,status,published_at,created_at', 'status=eq.published&order=published_at.desc.nullslast,created_at.desc');
-      serviceListing.innerHTML = '';
-      const count = document.querySelector('.services-page-title-row span');
-      if (count) count.textContent = `(${services.length})`;
-      services.forEach((service) => {
-        const link = document.createElement('a');
-        link.className = 'service-item';
-        link.href = `./branding/?slug=${encodeURIComponent(service.slug || service.id)}`;
-        link.innerHTML = `<div class="service-row"><div class="service-info"><div class="service-image"><img src="${service.image || ''}" alt="${service.title || ''}" /></div><span class="service-name">${service.title || 'Untitled service'}</span></div><div class="service-action"><span>VIEW PORTAL</span><span class="arrow-icon">→</span></div></div>`;
-        serviceListing.appendChild(link);
+      const services = await window.projectskevvDb.from('service_posts').select('id,title,slug,image,status,published_at,created_at', 'status=eq.published&order=published_at.desc.nullslast,created_at.desc');
+      const servicesBySlug = new Map(services.map((service) => [service.slug, service]));
+      serviceListing.querySelectorAll('.service-item[data-service-slug]').forEach((link) => {
+        const service = servicesBySlug.get(link.dataset.serviceSlug);
+        const image = link.querySelector('.service-image img');
+        if (service?.image && image) image.src = service.image;
       });
       revealDbContent(serviceListing);
     } catch (error) { revealDbContent(serviceListing); console.error(error); }
@@ -947,53 +943,25 @@ if (homeServicesList) {
     return media;
   };
   const renderHomeServices = async () => {
-    homeServicesList.innerHTML = '';
     try {
-      const services = await window.projectskevvDb.from('service_posts').select('id,title,slug,description,scope,image,application_title,detail1_title,detail2_title,detail3_title,feature_title,status,published_at,created_at', 'status=eq.published&order=published_at.desc.nullslast,created_at.desc');
-      const count = document.querySelector('#services .services-count');
-      if (count) count.textContent = `(${services.length})`;
-      if (!services.length) { homeServicesList.innerHTML = '<p class="service-empty-state">No services published yet.</p>'; return; }
-      services.forEach((service, index) => {
-        const title = service.title || 'Untitled service';
-        const link = document.createElement('a');
-        link.className = 'service-item';
-        link.href = `./services/branding/?slug=${encodeURIComponent(service.slug || service.id)}`;
-        link.setAttribute('aria-label', `Explore ${title}`);
-        link.innerHTML = '<span class="service-card-index" aria-hidden="true"></span><span class="service-card-category"></span><div class="service-card-content"><h3 class="service-name"></h3><figure class="service-image"></figure><div class="service-card-divider"></div><div class="service-capabilities"></div></div>';
-        link.querySelector('.service-card-index').textContent = String(index + 1);
-        link.querySelector('.service-card-category').textContent = title;
-        link.querySelector('.service-name').textContent = service.description || `${title} for brands ready to stand apart.`;
-        const image = renderHomeServiceMedia(service.image, title);
-        link.querySelector('.service-image').appendChild(image);
-        const groups = [
-          [service.scope, service.detail1_title],
-          [service.detail2_title, service.detail3_title],
-          [service.application_title, service.feature_title]
-        ];
-        const capabilities = link.querySelector('.service-capabilities');
-        groups.forEach((items) => {
-          const group = document.createElement('div');
-          group.className = 'service-capability-group';
-          items.filter(Boolean).forEach((item) => {
-            const label = document.createElement('span');
-            const text = String(item);
-            label.textContent = text === text.toLocaleUpperCase() ? text.toLocaleLowerCase().replace(/\b[a-z]/g, (letter) => letter.toLocaleUpperCase()) : text;
-            group.appendChild(label);
-          });
-          capabilities.appendChild(group);
-        });
-        homeServicesList.appendChild(link);
+      const services = await window.projectskevvDb.from('service_posts').select('id,title,slug,image,status,published_at,created_at', 'status=eq.published&order=published_at.desc.nullslast,created_at.desc');
+      const servicesBySlug = new Map(services.map((service) => [service.slug, service]));
+      homeServicesList.querySelectorAll('.service-item[data-service-slug]').forEach((link) => {
+        const service = servicesBySlug.get(link.dataset.serviceSlug);
+        const imageContainer = link.querySelector('.service-image');
+        if (service?.image && imageContainer) {
+          const title = link.querySelector('.service-card-category')?.textContent.trim() || 'Projectskevv offer';
+          imageContainer.replaceChildren(renderHomeServiceMedia(service.image, title));
+        }
       });
       revealDbContent(homeServicesList);
     } catch (error) {
-      homeServicesList.innerHTML = '<p class="service-empty-state">Services are unavailable right now.</p>';
       revealDbContent(homeServicesList);
       console.error(error);
     }
   };
   renderHomeServices();
 }
-
 const footerServiceLists = [...document.querySelectorAll('.footer-services')];
 if (footerServiceLists.length) {
   const renderFooterServices = async () => {
