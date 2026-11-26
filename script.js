@@ -1,17 +1,86 @@
 const initSmoothScroll = () => {
+  const smoothScrollMedia = window.matchMedia('(min-width: 761px) and (hover: hover) and (pointer: fine)');
+  let current = window.scrollY;
+  let target = current;
+  let frame = null;
+  let lastTime = performance.now();
   let paused = false;
 
-  // Keep legacy callers working while leaving wheel and touch handling to the browser.
+  const getLimit = () => Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+  const clamp = (value) => Math.min(getLimit(), Math.max(0, value));
+  const render = (time) => {
+    if (paused || !smoothScrollMedia.matches) {
+      frame = null;
+      return;
+    }
+    const delta = Math.min(64, time - lastTime);
+    lastTime = time;
+    current += (target - current) * (1 - Math.exp(-delta / 320));
+
+    if (Math.abs(target - current) < 0.15) {
+      current = target;
+      frame = null;
+    } else {
+      frame = window.requestAnimationFrame(render);
+    }
+    window.scrollTo(0, current);
+  };
+  const start = () => {
+    if (frame !== null) return;
+    lastTime = performance.now();
+    frame = window.requestAnimationFrame(render);
+  };
+  const handleWheel = (event) => {
+    if (paused || event.ctrlKey) return;
+    event.preventDefault();
+    current = window.scrollY;
+    target = clamp(target + event.deltaY * 0.86);
+    start();
+  };
+  const syncToNativeScroll = () => {
+    if (frame !== null) window.cancelAnimationFrame(frame);
+    frame = null;
+    current = window.scrollY;
+    target = current;
+  };
+  const syncInputMode = () => {
+    if (smoothScrollMedia.matches) {
+      window.addEventListener('wheel', handleWheel, { passive: false });
+      return;
+    }
+    window.removeEventListener('wheel', handleWheel);
+    syncToNativeScroll();
+  };
+
+  window.addEventListener('scroll', () => {
+    if (!paused && frame === null) syncToNativeScroll();
+  }, { passive: true });
+  window.addEventListener('resize', syncInputMode, { passive: true });
+  smoothScrollMedia.addEventListener?.('change', syncInputMode);
+  syncInputMode();
+
   window.projectskevvLenis = {
-    pause: () => { paused = true; },
+    pause: () => {
+      paused = true;
+      if (frame !== null) window.cancelAnimationFrame(frame);
+      frame = null;
+      syncToNativeScroll();
+    },
     resume: (position = window.scrollY) => {
       window.scrollTo({ top: Math.max(0, Number(position) || 0), behavior: 'auto' });
+      syncToNativeScroll();
       paused = false;
     },
     scrollTo: (value) => {
       if (paused) return;
       const top = typeof value === 'number' ? value : document.querySelector(value)?.offsetTop || 0;
-      window.scrollTo({ top: Math.max(0, top), behavior: 'auto' });
+      if (!smoothScrollMedia.matches) {
+        window.scrollTo({ top: Math.max(0, top), behavior: 'auto' });
+        syncToNativeScroll();
+        return;
+      }
+      target = clamp(top);
+      start();
     }
   };
 };
