@@ -552,12 +552,9 @@ body {
   .mission-scroll { height: auto; }
   .mission-scroll-stage {
     box-sizing: border-box;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: 53% 47%;
-    height: 100vh;
-    height: 100dvh;
-    min-height: 600px;
+    display: block;
+    height: auto;
+    min-height: 0;
     overflow: visible;
     padding-top: 58px;
     position: relative;
@@ -565,9 +562,9 @@ body {
   .mission-copy {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto auto auto minmax(56px, 1fr) auto;
+    grid-template-rows: auto auto auto minmax(56px, 145px) auto;
     gap: 8px;
-    min-height: 0;
+    min-height: 54svh;
     padding: 12px 18px 12px;
   }
   .mission-eyebrow { font-size: 10px; grid-column: 1; grid-row: 1; white-space: normal; }
@@ -580,25 +577,21 @@ body {
   .mission-services-window {
     border-left: 0;
     border-top: 1px solid rgba(52, 50, 52, .14);
-    grid-row: 2;
-    height: 100%;
-    min-height: 0;
-    -webkit-overflow-scrolling: touch;
-    overflow-x: auto;
-    overflow-y: hidden;
-    overscroll-behavior-x: contain;
-    scroll-snap-type: x mandatory;
+    height: auto;
+    overflow: visible;
   }
-  .mission-services-track { transform: none; will-change: auto; }
+  .mission-services-track { flex-direction: column; transform: none; will-change: auto; width: 100%; }
   .mission-service-card {
     box-sizing: border-box;
+    border-bottom: 1px solid rgba(52, 50, 52, .14);
+    border-right: 0;
     display: grid;
-    flex-basis: 78vw;
+    flex: 0 0 auto;
     grid-template-rows: auto minmax(0, 1fr) auto auto;
+    height: 300px;
     min-height: 0;
     padding: 16px 16px 20px;
-    scroll-snap-align: start;
-    width: 78vw;
+    width: 100%;
   }
   .mission-service-number { font-size: clamp(110px, 36vw, 180px); grid-row: 1; }
   .mission-service-card h3 { font-size: clamp(28px, 8vw, 36px); grid-row: 3; margin: 0; }
@@ -609,7 +602,7 @@ body {
   .mission-scroll-stage { grid-template-rows: 55% 45%; }
   .mission-copy { gap: 6px; padding-bottom: 8px; padding-top: 8px; }
   .mission-feature-media { max-height: 86px; }
-  .mission-service-card { padding-bottom: 14px; padding-top: 12px; }
+  .mission-service-card { height: 270px; padding-bottom: 14px; padding-top: 12px; }
   .mission-service-number { font-size: clamp(100px, 32vw, 145px); }
   .mission-service-card h3 { font-size: 28px; }
   .mission-service-card p { line-height: 1.35; margin-top: 10px; }

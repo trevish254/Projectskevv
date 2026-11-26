@@ -132,7 +132,6 @@ const initMissionHorizontalScroll = () => {
   window.addEventListener('scroll', () => {
     if (!isMobile()) schedulePositionUpdate();
   }, { passive: true });
-  viewport.addEventListener('scroll', schedulePositionUpdate, { passive: true });
   window.addEventListener('resize', measure, { passive: true });
   window.addEventListener('load', measure, { once: true });
   setActiveImage(0);
