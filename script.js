@@ -1,141 +1,22 @@
 const initSmoothScroll = () => {
-  let current = window.scrollY;
-  let target = current;
-  let frame = null;
-  let lastTime = performance.now();
-  let touchY = null;
-  let lastTouchY = null;
-  let touchVelocity = 0;
-  let lastTouchTime = 0;
   let paused = false;
 
-  const getLimit = () => Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
-  const clamp = (value) => Math.min(getLimit(), Math.max(0, value));
-  const isNativeScrollTarget = (element) => element?.closest?.('input, textarea, select, [contenteditable="true"], [data-lenis-prevent]');
-  const syncToNativeScroll = () => {
-    if (frame !== null) window.cancelAnimationFrame(frame);
-    frame = null;
-    current = window.scrollY;
-    target = current;
-  };
-
-  const render = (time) => {
-    if (paused) {
-      frame = null;
-      return;
-    }
-    const delta = Math.min(64, time - lastTime);
-    lastTime = time;
-    const smoothing = 1 - Math.exp(-delta / 320);
-    current += (target - current) * smoothing;
-
-    if (Math.abs(target - current) < 0.15) {
-      current = target;
-      frame = null;
-    } else {
-      frame = window.requestAnimationFrame(render);
-    }
-
-    window.scrollTo(0, current);
-  };
-
-  const start = () => {
-    if (frame !== null) return;
-    lastTime = performance.now();
-    frame = window.requestAnimationFrame(render);
-  };
-
-  window.addEventListener('wheel', (event) => {
-    if (paused) return;
-    if (event.ctrlKey) return;
-    event.preventDefault();
-    current = window.scrollY;
-    target = clamp(target + event.deltaY * 0.86);
-    start();
-  }, { passive: false });
-
-  window.addEventListener('touchstart', (event) => {
-    if (paused) return;
-    if (isNativeScrollTarget(event.target)) {
-      syncToNativeScroll();
-      touchY = null;
-      lastTouchY = null;
-      touchVelocity = 0;
-      return;
-    }
-    if (!event.touches.length) return;
-    touchY = event.touches[0].clientY;
-    lastTouchY = touchY;
-    touchVelocity = 0;
-    lastTouchTime = performance.now();
-    current = window.scrollY;
-    target = current;
-  }, { passive: true });
-
-  window.addEventListener('touchmove', (event) => {
-    if (paused) return;
-    if (isNativeScrollTarget(event.target)) {
-      syncToNativeScroll();
-      touchY = null;
-      lastTouchY = null;
-      touchVelocity = 0;
-      return;
-    }
-    if (touchY === null || !event.touches.length) return;
-    const nextY = event.touches[0].clientY;
-    const now = performance.now();
-    const elapsed = Math.max(1, now - lastTouchTime);
-    const movement = lastTouchY - nextY;
-    touchVelocity = movement / elapsed;
-    lastTouchY = nextY;
-    lastTouchTime = now;
-    target = clamp(target + movement);
-    event.preventDefault();
-    start();
-  }, { passive: false });
-
-  window.addEventListener('touchend', () => {
-    if (paused) return;
-    if (touchY === null) return;
-    target = clamp(target + touchVelocity * 140);
-    touchY = null;
-    lastTouchY = null;
-    touchVelocity = 0;
-    start();
-  }, { passive: true });
-
-  window.addEventListener('scroll', () => {
-    if (paused) return;
-    if (frame === null) {
-      current = window.scrollY;
-      target = current;
-    }
-  }, { passive: true });
-
+  // Keep legacy callers working while leaving wheel and touch handling to the browser.
   window.projectskevvLenis = {
-    pause: () => {
-      paused = true;
-      if (frame !== null) window.cancelAnimationFrame(frame);
-      frame = null;
-      current = window.scrollY;
-      target = current;
-    },
+    pause: () => { paused = true; },
     resume: (position = window.scrollY) => {
-      current = Math.max(0, Number(position) || 0);
-      target = current;
-      window.scrollTo(0, current);
+      window.scrollTo({ top: Math.max(0, Number(position) || 0), behavior: 'auto' });
       paused = false;
     },
     scrollTo: (value) => {
       if (paused) return;
-      target = typeof value === 'number' ? clamp(value) : clamp(document.querySelector(value)?.offsetTop || 0);
-      start();
+      const top = typeof value === 'number' ? value : document.querySelector(value)?.offsetTop || 0;
+      window.scrollTo({ top: Math.max(0, top), behavior: 'auto' });
     }
   };
 };
 
 initSmoothScroll();
-
 const initMissionHorizontalScroll = () => {
   const section = document.querySelector('.mission-scroll');
   const stage = section?.querySelector('.mission-scroll-stage');
