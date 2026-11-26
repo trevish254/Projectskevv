@@ -71,11 +71,11 @@ const initScrollMilestones = () => {
   const steps = Array.from(map?.querySelectorAll('.milestone-step') || []);
   if (!section || !pin || !map || !svg || !progressPaths.length || !steps.length) return;
 
-  const desktopPath = 'M60 300 C155 210 215 100 300 125 S445 345 520 270 S675 95 760 130 S930 350 1000 270 S1090 135 1140 60';
-  const mobilePath = 'M190 84 C390 150 50 240 190 288 S390 420 190 492 S50 630 190 696 S390 800 190 900 S80 1030 190 1104';
-  const mobileNodeY = [7, 24, 41, 58, 75, 92];
-  const desktopX = [5, 25, 43.333, 63.333, 83.333, 95];
-  const desktopY = [68.182, 28.409, 61.364, 29.545, 61.364, 13.636];
+  const desktopPath = 'M60 300 C170 220 300 105 420 125 C540 145 675 355 780 270 C885 185 1030 75 1140 60';
+  const mobilePath = 'M190 84 C390 150 50 260 190 360 C390 460 50 570 190 648 C390 760 50 950 190 1080';
+  const mobileNodeY = [7, 30, 54, 90];
+  const desktopX = [5, 35, 65, 95];
+  const desktopY = [68.2, 28.4, 61.4, 13.6];
   let pathLength = 0;
   let frame = null;
   let mobile = window.matchMedia('(max-width: 760px)').matches;
@@ -119,7 +119,7 @@ const initScrollMilestones = () => {
       const word = document.createElement('span');
       word.className = 'milestone-word';
       word.dataset.wordIndex = String(index);
-      word.textContent = text;
+      word.textContent = `${index ? ' ' : ''}${text}`;
       return word;
     }));
   });
@@ -215,7 +215,7 @@ let homepagePricingSettings = null;
 const homepageCustomMediaSelector = '.menu-grid-section [data-home-media-key], .swatch-showcase [data-home-media-key]';
 const isHomepageLockedMedia = (media) => {
   if (isHomepage && media.matches(homepageCustomMediaSelector)) return false;
-  return Boolean(media.closest('.mission-scroll, .footer-services, [class*="projects"], [class*="services"], [class*="journal"], a[href*="projects"], a[href*="services"], a[href*="journal"]'));
+  return Boolean(media.closest('.hero-side-panel, .mission-scroll, .footer-services, [class*="projects"], [class*="services"], [class*="journal"], a[href*="projects"], a[href*="services"], a[href*="journal"]'));
 };
 const homepageMediaKey = (media) => {
   if (!media) return '';
@@ -1368,6 +1368,42 @@ document.querySelectorAll('.about-studio-play').forEach((button) => {
   });
 });
 
+const heroPanelVideo = document.querySelector('.hero-side-panel-video');
+const heroPanelPlay = document.querySelector('.hero-panel-play');
+
+if (heroPanelVideo && heroPanelPlay) {
+  const heroSidePanel = heroPanelVideo.closest('.hero-side-panel');
+  const heroPanelIcon = heroPanelPlay.querySelector('span');
+  const syncHeroPanelPlayback = () => {
+    const isPlaying = !heroPanelVideo.paused && !heroPanelVideo.ended;
+    heroPanelPlay.setAttribute('aria-pressed', String(isPlaying));
+    heroPanelPlay.setAttribute('aria-label', isPlaying ? 'Pause studio film' : 'Play studio film');
+    if (heroPanelIcon) heroPanelIcon.textContent = isPlaying ? '❚❚' : '▶';
+  };
+
+  heroPanelPlay.addEventListener('click', async () => {
+    if (!heroPanelVideo.paused) {
+      heroPanelVideo.pause();
+      return;
+    }
+
+    try {
+      await heroPanelVideo.play();
+    } catch (error) {
+      heroSidePanel?.classList.remove('is-playing');
+      syncHeroPanelPlayback();
+      console.warn('The studio film could not be played.', error);
+    }
+  });
+
+  heroPanelVideo.addEventListener('play', syncHeroPanelPlayback);
+  heroPanelVideo.addEventListener('pause', syncHeroPanelPlayback);
+  heroPanelVideo.addEventListener('ended', syncHeroPanelPlayback);
+  heroPanelVideo.addEventListener('playing', () => heroSidePanel?.classList.add('is-playing'));
+  heroPanelVideo.addEventListener('error', () => heroSidePanel?.classList.remove('is-playing'));
+  syncHeroPanelPlayback();
+}
+
 document.querySelectorAll('.service-accordion-header').forEach((header) => {
   header.addEventListener('click', () => {
     const item = header.closest('.service-accordion-item');
@@ -1704,7 +1740,7 @@ if (cmsPreview) {
     element.dataset.editorLabel = cmsEditorLabel(element);
   });
 
-  const cmsLockedMedia = (element) => isHomepage && element.matches(homepageCustomMediaSelector) ? false : isLegalPage ? false : Boolean(element.closest('.mission-scroll, .footer-services, [class*="projects"], [class*="services"], [class*="journal"], a[href*="projects"], a[href*="services"], a[href*="journal"]'));
+  const cmsLockedMedia = (element) => isHomepage && element.matches(homepageCustomMediaSelector) ? false : isLegalPage ? false : Boolean(element.closest('.hero-side-panel, .mission-scroll, .footer-services, [class*="projects"], [class*="services"], [class*="journal"], a[href*="projects"], a[href*="services"], a[href*="journal"]'));
   const cmsLockedContent = (element) => isLegalPage ? false : Boolean(element.closest('#projects, #services, #journal, .featured-project, .footer-services, [class*="projects"], [class*="services"], [class*="journal"], a[href*="projects"], a[href*="services"], a[href*="journal"]'));
   const cmsTextSelector = 'h1, h2, h3, h4, h5, h6, p, span, a, button, li, label, summary, dd';
   const cmsMediaEditor = document.createElement('aside');

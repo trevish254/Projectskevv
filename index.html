@@ -38,7 +38,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,400;6..96,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="styles.css?v=20261101-home-faq-v2" />
+    <link rel="stylesheet" href="styles.css?v=20261126-four-strengths-scroll-v3" />
   </head>
   <body>
     <header class="site-header">
@@ -80,16 +80,25 @@
           </p>
         </div>
 
-        <!-- Featured Project Footer (Bottom Right) -->
-        <div class="featured-project">
-          <div class="featured-project-top"><p class="featured-index">04/04</p><div class="featured-project-controls"><button type="button" class="featured-project-prev" aria-label="Previous featured project">&#8249;</button><button type="button" class="featured-project-next" aria-label="Next featured project">&#8250;</button></div></div>
-          <div class="featured-project-slides" aria-live="polite">
-            <div class="featured-project-slide is-active"><h3>Brand Refresh</h3><p>Clearer identities, sharper digital experiences.</p></div>
-            <div class="featured-project-slide"><h3>Beach Shoot</h3><p>Stories with a sharper point of view.</p></div>
-            <div class="featured-project-slide"><h3>Digital Culture</h3><p>Web experiences built to move brands forward.</p></div>
-            <div class="featured-project-slide"><h3>New Perspective</h3><p>Visual systems for brands ready to grow.</p></div>
+        <!-- Full-height studio panel inspired by the split-screen reference. -->
+        <aside class="hero-side-panel" aria-label="Studio film and featured work">
+          <img class="hero-side-panel-poster" src="https://framerusercontent.com/images/daFBEqvccTmPwLaEvq3zBCJm8PU.png" alt="" aria-hidden="true" fetchpriority="high" />
+          <video class="hero-side-panel-video" id="hero-studio-film" aria-hidden="true" muted loop playsinline preload="none" poster="https://framerusercontent.com/images/daFBEqvccTmPwLaEvq3zBCJm8PU.png">
+            <source src="https://framerusercontent.com/assets/XQ50cojfMrtUMaftAW7d2FzhzE.mp4" type="video/mp4" />
+          </video>
+          <div class="featured-project">
+            <div class="featured-project-top"><p class="featured-index">01/04</p><div class="featured-project-controls"><button type="button" class="featured-project-prev" aria-label="Previous featured project">&#8249;</button><button type="button" class="featured-project-next" aria-label="Next featured project">&#8250;</button></div></div>
+            <div class="featured-project-slides" aria-live="polite">
+              <div class="featured-project-slide is-active"><h3>Brand Refresh</h3><p>Clearer identities, sharper digital experiences.</p></div>
+              <div class="featured-project-slide"><h3>Beach Shoot</h3><p>Stories with a sharper point of view.</p></div>
+              <div class="featured-project-slide"><h3>Digital Culture</h3><p>Web experiences built to move brands forward.</p></div>
+              <div class="featured-project-slide"><h3>New Perspective</h3><p>Visual systems for brands ready to grow.</p></div>
+            </div>
           </div>
-        </div>
+        </aside>
+        <button class="hero-panel-play" type="button" aria-label="Play studio film" aria-pressed="false" aria-controls="hero-studio-film">
+          <span aria-hidden="true">&#9654;</span>
+        </button>
       </section>
 
       <section class="mission-scroll" aria-labelledby="mission-title">
@@ -102,33 +111,27 @@
               <img class="mission-feature-image is-active" src="https://res.cloudinary.com/dfedn2xsg/image/upload/v1792133776/Brand_identity_utzv1z.png" alt="" data-mission-image="0" />
               <img class="mission-feature-image" src="https://res.cloudinary.com/dfedn2xsg/image/upload/v1792133769/Digital_studio_qjro5l.png" alt="" data-mission-image="1" />
               <img class="mission-feature-image" src="https://res.cloudinary.com/dfedn2xsg/image/upload/v1792133755/Photo_and_film_fnylvd.png" alt="" data-mission-image="2" />
-              <img class="mission-feature-image" src="https://framerusercontent.com/images/q7ph0veWTcIgKChH0aJrZBDKGog.png" alt="" data-mission-image="3" />
             </div>
             <div class="mission-actions">
               <a href="#contact">Inquire <span aria-hidden="true">→</span></a>
             </div>
           </div>
-          <div class="mission-services-window" aria-label="Our services; scroll down to move through the service cards">
+          <div class="mission-services-window" aria-label="Our services; scroll down to move through three service cards">
             <div class="mission-services-track">
               <article class="mission-service-card">
                 <span class="mission-service-number">1</span>
-                <h3>Brand<br />Identity</h3>
-                <p>A strategic visual foundation for founders who need a polished, memorable brand identity.</p>
+                <h3>Commercial<br />Production</h3>
+                <p>We bring campaigns to life through creative direction, photography, film production, and polished post-production.</p>
               </article>
               <article class="mission-service-card">
                 <span class="mission-service-number">2</span>
-                <h3>Digital<br />Design</h3>
-                <p>Web and app experiences that make it simple for people to connect with your brand.</p>
+                <h3>Digital<br />Studio</h3>
+                <p>We design and build distinctive websites and digital experiences that are easy to use and unmistakably yours.</p>
               </article>
               <article class="mission-service-card">
                 <span class="mission-service-number">3</span>
-                <h3>Photo &amp;<br />Film</h3>
-                <p>Distinctive imagery and video that bring your products, people, and ideas to life.</p>
-              </article>
-              <article class="mission-service-card">
-                <span class="mission-service-number">4</span>
-                <h3>Creative<br />Strategy</h3>
-                <p>A clear point of view and practical direction to help your brand grow with confidence.</p>
+                <h3>Modeling</h3>
+                <p>We bring models, styling, and creative direction together for fashion and product campaigns with a clear point of view.</p>
               </article>
             </div>
           </div>
@@ -169,34 +172,30 @@
             <span class="milestone-kicker">HOW WE MAKE IT HAPPEN</span>
             <h2 id="milestone-title">A clear path from first thought to what’s next.</h2>
           </div>
-          <div class="milestone-map" aria-label="Project milestones">
+          <div class="milestone-map" aria-label="Our approach">
             <svg class="milestone-path" viewBox="0 0 1200 440" preserveAspectRatio="none" aria-hidden="true">
-              <path class="milestone-path-track" d="M60 300 C155 210 215 100 300 125 S445 345 520 270 S675 95 760 130 S930 350 1000 270 S1090 135 1140 60" />
-              <path class="milestone-path-progress" d="M60 300 C155 210 215 100 300 125 S445 345 520 270 S675 95 760 130 S930 350 1000 270 S1090 135 1140 60" />
+              <path class="milestone-path-track" d="M60 300 C170 220 300 105 420 125 C540 145 675 355 780 270 C885 185 1030 75 1140 60" />
+              <path class="milestone-path-progress" d="M60 300 C170 220 300 105 420 125 C540 145 675 355 780 270 C885 185 1030 75 1140 60" />
             </svg>
-            <span class="milestone-node" data-node-progress="0" style="--milestone-x: 5%; --milestone-y: 68%" aria-hidden="true"></span>
-            <span class="milestone-node" data-node-progress="0.2" style="--milestone-x: 25%; --milestone-y: 28%" aria-hidden="true"></span>
-            <span class="milestone-node" data-node-progress="0.4" style="--milestone-x: 43.3%; --milestone-y: 61%" aria-hidden="true"></span>
-            <span class="milestone-node" data-node-progress="0.6" style="--milestone-x: 63.3%; --milestone-y: 30%" aria-hidden="true"></span>
-            <span class="milestone-node" data-node-progress="0.8" style="--milestone-x: 83.3%; --milestone-y: 61%" aria-hidden="true"></span>
-            <span class="milestone-node" data-node-progress="1" style="--milestone-x: 95%; --milestone-y: 14%" aria-hidden="true"></span>
-            <article class="milestone-step is-below is-edge-left" data-milestone-progress="0" style="--milestone-x: 5%; --milestone-y: 68%">
-              <h3>Kickoff</h3><p>Align the team on goals, scope and what success looks like.</p>
+            <span class="milestone-node" data-node-progress="0" style="--milestone-x: 5%; --milestone-y: 68.2%" aria-hidden="true"></span>
+            <span class="milestone-node" data-node-progress="0.3333" style="--milestone-x: 35%; --milestone-y: 28.4%" aria-hidden="true"></span>
+            <span class="milestone-node" data-node-progress="0.6667" style="--milestone-x: 65%; --milestone-y: 61.4%" aria-hidden="true"></span>
+            <span class="milestone-node" data-node-progress="1" style="--milestone-x: 95%; --milestone-y: 13.6%" aria-hidden="true"></span>
+            <article class="milestone-step is-below is-edge-left" data-milestone-progress="0" style="--milestone-x: 5%; --milestone-y: 68.2%">
+              <h3>Hybrid production</h3>
+              <p>We bring photography, film, design, and digital work together in a flexible production model shaped around each brief.</p>
             </article>
-            <article class="milestone-step is-above" data-milestone-progress="0.2" style="--milestone-x: 25%; --milestone-y: 28%">
-              <h3>Research</h3><p>Talk to users and study the market to uncover real needs.</p>
+            <article class="milestone-step is-above" data-milestone-progress="0.3333" style="--milestone-x: 35%; --milestone-y: 28.4%">
+              <h3>Integrated execution</h3>
+              <p>Strategy, creative, production, and delivery work as one coordinated team, keeping every touchpoint connected.</p>
             </article>
-            <article class="milestone-step is-below" data-milestone-progress="0.4" style="--milestone-x: 43.3%; --milestone-y: 61%">
-              <h3>Prototype</h3><p>Sketch and test early ideas fast before committing to a direction.</p>
+            <article class="milestone-step is-below" data-milestone-progress="0.6667" style="--milestone-x: 65%; --milestone-y: 61.4%">
+              <h3>Production speed</h3>
+              <p>Clear workflows and decisive reviews move work from brief to finished assets quickly while protecting craft.</p>
             </article>
-            <article class="milestone-step is-above" data-milestone-progress="0.6" style="--milestone-x: 63.3%; --milestone-y: 30%">
-              <h3>Design</h3><p>Shape a clear visual system around the people it needs to reach.</p>
-            </article>
-            <article class="milestone-step is-below" data-milestone-progress="0.8" style="--milestone-x: 83.3%; --milestone-y: 61%">
-              <h3>Beta</h3><p>Put the work into real hands, learn, and refine the details.</p>
-            </article>
-            <article class="milestone-step is-above is-edge-right" data-milestone-progress="1" style="--milestone-x: 95%; --milestone-y: 14%">
-              <h3>Launch</h3><p>Deliver with care and set the team up for what comes next.</p>
+            <article class="milestone-step is-above is-edge-right" data-milestone-progress="1" style="--milestone-x: 95%; --milestone-y: 13.6%">
+              <h3>Commercial thinking</h3>
+              <p>We ground creative choices in your audience, market, and business goals so the work has a clear job to do.</p>
             </article>
           </div>
         </div>
