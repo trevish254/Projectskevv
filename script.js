@@ -255,40 +255,40 @@ const initStickyWorkGrid = () => {
   const description = section?.querySelector('.sticky-work-grid__description');
   const link = section?.querySelector('.sticky-work-grid__link');
   if (!section || !pin || !grid || !items.length || !title) return;
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const motionScale = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? .58 : 1;
 
   let frame = null;
-  let active = false;
   const clamp = (value) => Math.max(0, Math.min(1, value));
   const ease = (value) => value * value * (3 - 2 * value);
   const update = () => {
     frame = null;
-    if (!active) return;
     const bounds = section.getBoundingClientRect();
     const viewportHeight = window.innerHeight;
-    const scrollLength = section.offsetHeight + viewportHeight - pin.offsetHeight;
-    const progress = clamp((viewportHeight - bounds.top) / Math.max(1, scrollLength));
-    const zoomProgress = ease(clamp((progress - .35) / .65));
-    const scale = 1 + zoomProgress * 1.05;
+    const scrollLength = Math.max(1, section.offsetHeight - pin.offsetHeight);
+    // Progress follows the sticky element's actual travel, from its top pin
+    // point to the point where the section releases it.
+    const progress = ease(clamp(-bounds.top / scrollLength));
+    const zoomProgress = ease(clamp(progress / .88)) * motionScale;
+    const scale = .92 + zoomProgress * 1.75;
     const columns = 3;
     const rows = Math.ceil(items.length / columns);
 
-    grid.style.transform = `scale(${scale})`;
+    grid.style.transform = `translate3d(0, ${-zoomProgress * 5}vh, 0) scale(${scale})`;
     items.forEach((item, index) => {
       const column = index % columns;
       const row = Math.floor(index / columns);
-      const stagger = (index / Math.max(1, items.length - 1)) * .14;
-      const reveal = ease(clamp((progress - stagger) / .38));
-      const enteringFromTop = column % 2 === 0;
-      const entryY = (1 - reveal) * (enteringFromTop ? -1 : 1) * viewportHeight * .95;
-      const sideShift = column === 0 ? -40 * zoomProgress : column === 2 ? 40 * zoomProgress : 0;
-      const centerShift = column === 1 ? (row < rows / 2 ? -40 : 40) * zoomProgress : 0;
-      item.style.transform = `translate3d(${sideShift}%, ${entryY.toFixed(1)}px, 0) translateY(${centerShift}%)`;
+      const direction = column === 1 ? 1 : -1;
+      const stagger = (row / Math.max(1, rows - 1)) * 13;
+      const travel = (column === 1 ? 118 : 88) * direction;
+      const translateY = zoomProgress * (travel + (row % 2 ? -stagger : stagger));
+      const translateX = column === 0 ? -zoomProgress * 16 : column === 2 ? zoomProgress * 16 : 0;
+      item.style.transform = `translate3d(${translateX}vw, ${translateY}vh, 0)`;
+      item.style.opacity = String(1 - zoomProgress * .14);
     });
 
-    const contentProgress = ease(clamp((progress - .38) / .24));
-    title.style.opacity = String(.35 + .65 * ease(clamp(progress / .2)));
-    title.style.transform = `translate3d(0, ${(1 - ease(clamp(progress / .38))) * 8}vh, 0)`;
+    const contentProgress = ease(clamp((progress - .53) / .24));
+    title.style.opacity = String(contentProgress);
+    title.style.transform = `translate3d(0, ${(1 - contentProgress) * 5}vh, 0)`;
     if (description) {
       description.style.opacity = String(contentProgress);
       description.style.transform = `translate3d(0, ${(1 - contentProgress) * 14}px, 0)`;
@@ -300,17 +300,12 @@ const initStickyWorkGrid = () => {
     }
   };
   const scheduleUpdate = () => {
-    if (active && frame === null) frame = window.requestAnimationFrame(update);
+    if (frame === null) frame = window.requestAnimationFrame(update);
   };
-  const observer = new IntersectionObserver((entries) => {
-    active = entries.some((entry) => entry.isIntersecting);
-    section.dataset.scrollActive = String(active);
-    if (active) scheduleUpdate();
-  }, { rootMargin: '120px 0px' });
-
-  observer.observe(section);
   window.addEventListener('scroll', scheduleUpdate, { passive: true });
   window.addEventListener('resize', scheduleUpdate, { passive: true });
+  window.addEventListener('load', scheduleUpdate, { once: true });
+  scheduleUpdate();
 };
 
 initStickyWorkGrid();
@@ -740,6 +735,178 @@ if (homeProjectGrid) {
   };
   renderHomeProjects();
 }
+
+const initHomeProjectShowcase = () => {
+  const section = document.querySelector('[data-home-project-showcase]');
+  const pin = section?.querySelector('[data-home-project-pin]');
+  const slides = section?.querySelector('.home-project-slides');
+  const copyCount = section?.querySelector('[data-home-project-count]');
+  const copyTitle = section?.querySelector('[data-home-project-title]');
+  const copyDescription = section?.querySelector('[data-home-project-description]');
+  const previewSlot = section?.querySelector('[data-home-project-preview]');
+  const viewLink = section?.querySelector('[data-home-project-link]');
+  const status = section?.querySelector('[data-home-project-status]');
+  const dial = section?.querySelector('.home-project-dial');
+  if (!section || !pin || !slides || !copyTitle || !previewSlot || !viewLink || !dial) return;
+
+  let frame = null;
+  let cardCount = 0;
+  let activeIndex = -1;
+  let currentPreview = previewSlot;
+  const clamp = (value) => Math.max(0, Math.min(1, value));
+  const getCards = () => [...slides.querySelectorAll(':scope > .project-card')]
+    .filter((card) => getComputedStyle(card).display !== 'none');
+
+  const updateActiveCopy = (cards, index) => {
+    const card = cards[index];
+    if (!card) return;
+    const title = card.querySelector('.project-card-meta h3')?.textContent.trim() || 'Selected project';
+    const description = card.querySelector('.project-card-meta p')?.textContent.trim() || '';
+    const media = card.querySelector('.project-card-media img, .project-card-media video');
+    const source = media?.currentSrc || media?.src || '';
+    if (copyCount) copyCount.textContent = `${String(index + 1).padStart(2, '0')} / ${String(cards.length).padStart(2, '0')}`;
+    copyTitle.textContent = title;
+    if (copyDescription) copyDescription.textContent = description;
+    viewLink.href = card.href;
+    viewLink.setAttribute('aria-label', `View ${title} project`);
+    if (status) status.textContent = `${title}, project ${index + 1} of ${cards.length}`;
+
+    if (media?.tagName === 'VIDEO' && currentPreview.tagName !== 'VIDEO') {
+      const video = document.createElement('video');
+      video.muted = true;
+      video.loop = true;
+      video.autoplay = true;
+      video.playsInline = true;
+      video.setAttribute('aria-hidden', 'true');
+      currentPreview.replaceWith(video);
+      currentPreview = video;
+    } else if (media?.tagName !== 'VIDEO' && currentPreview.tagName !== 'IMG') {
+      const image = document.createElement('img');
+      image.alt = '';
+      image.setAttribute('aria-hidden', 'true');
+      currentPreview.replaceWith(image);
+      currentPreview = image;
+    }
+    if (source && currentPreview.src !== source) {
+      currentPreview.src = source;
+      if (currentPreview.tagName === 'VIDEO') currentPreview.play().catch(() => {});
+    }
+    activeIndex = index;
+  };
+
+  const update = () => {
+    frame = null;
+    const cards = getCards();
+    const count = cards.length;
+    if (count !== cardCount) {
+      cardCount = count;
+      section.style.height = `${count > 1 ? (count + 1) * 100 : 100}svh`;
+      section.dataset.showcaseReady = 'true';
+      const totalLabel = section.querySelector('.projects-title p');
+      if (totalLabel) totalLabel.textContent = `(${count})`;
+      activeIndex = -1;
+    }
+    if (!count) return;
+
+    const sectionTop = section.getBoundingClientRect().top;
+    const scrollRange = Math.max(1, section.offsetHeight - pin.offsetHeight);
+    const progress = clamp(-sectionTop / scrollRange);
+    const projectPosition = Math.min(count - 1, progress * count);
+    const fromIndex = Math.min(count - 1, Math.floor(projectPosition));
+    const toIndex = Math.min(count - 1, fromIndex + 1);
+    const revealProgress = toIndex === fromIndex ? 0 : projectPosition - fromIndex;
+    const selectedIndex = revealProgress < .5 ? fromIndex : toIndex;
+    const revealRadius = revealProgress * 155;
+
+    cards.forEach((card, index) => {
+      const isCurrent = index === fromIndex;
+      const isRevealing = index === toIndex && toIndex !== fromIndex;
+      const visible = isCurrent || isRevealing;
+      card.style.opacity = visible ? '1' : '0';
+      card.style.zIndex = isRevealing ? '2' : isCurrent ? '1' : '0';
+      card.style.clipPath = isRevealing ? `circle(${revealRadius.toFixed(2)}% at 50% 50%)` : isCurrent ? 'circle(155% at 50% 50%)' : 'circle(0% at 50% 50%)';
+      card.inert = index !== selectedIndex;
+      card.setAttribute('aria-hidden', String(index !== selectedIndex));
+    });
+
+    dial.style.setProperty('--home-project-progress', `${progress * 360}deg`);
+    if (selectedIndex !== activeIndex) updateActiveCopy(cards, selectedIndex);
+  };
+
+  const scheduleUpdate = () => {
+    if (frame === null) frame = window.requestAnimationFrame(update);
+  };
+  const observer = new MutationObserver(scheduleUpdate);
+  observer.observe(slides, { childList: true });
+  document.addEventListener('input', (event) => {
+    if (event.target.matches?.('[data-cms-project-range]')) scheduleUpdate();
+  });
+  window.addEventListener('scroll', scheduleUpdate, { passive: true });
+  window.addEventListener('resize', scheduleUpdate, { passive: true });
+  window.addEventListener('load', scheduleUpdate, { once: true });
+  scheduleUpdate();
+};
+
+initHomeProjectShowcase();
+
+const initTestimonialScrollMotion = () => {
+  const section = document.querySelector('[data-testimonial-scroll]');
+  const space = section?.querySelector('[data-testimonial-space]');
+  const stage = section?.querySelector('[data-testimonial-stage]');
+  const cards = Array.from(section?.querySelectorAll('[data-testimonial-slide]') || []);
+  const countLabel = section?.querySelector('[data-testimonial-count]');
+  const progressBar = section?.querySelector('[data-testimonial-progress]');
+  if (!section || !space || !stage || !cards.length) return;
+
+  let frame = null;
+  let activeIndex = -1;
+  const clamp = (value) => Math.max(0, Math.min(1, value));
+  space.style.height = `${(cards.length + 1) * 100}svh`;
+  section.dataset.motionReady = 'true';
+
+  const update = () => {
+    frame = null;
+    const range = Math.max(1, space.offsetHeight - stage.offsetHeight);
+    const progress = clamp(-section.getBoundingClientRect().top / range);
+    const position = progress * (cards.length - 1);
+    const selectedIndex = Math.min(cards.length - 1, Math.round(position));
+    const mobile = window.matchMedia('(max-width: 760px)').matches;
+    const horizontalStep = mobile ? 20 : 34;
+    const verticalStep = mobile ? 5 : 7;
+
+    cards.forEach((card, index) => {
+      const distance = index - position;
+      const absoluteDistance = Math.abs(distance);
+      const x = distance * horizontalStep;
+      const y = distance * verticalStep + Math.sin(distance * 0.72) * (mobile ? 1.8 : 3.2);
+      const scale = Math.max(mobile ? .72 : .68, 1 - absoluteDistance * (mobile ? .105 : .115));
+      const rotation = distance * (mobile ? 1.4 : 2.2);
+      const opacity = clamp(1.08 - absoluteDistance * .27);
+      card.style.opacity = opacity.toFixed(3);
+      card.style.transform = `translate3d(calc(-50% + ${x.toFixed(2)}vw), calc(-50% + ${y.toFixed(2)}vh), 0) scale(${scale.toFixed(3)}) rotate(${rotation.toFixed(2)}deg)`;
+      card.style.zIndex = String(cards.length - Math.round(absoluteDistance * 10));
+      card.inert = index !== selectedIndex;
+      card.setAttribute('aria-hidden', String(index !== selectedIndex));
+    });
+
+    if (selectedIndex !== activeIndex) {
+      activeIndex = selectedIndex;
+      if (countLabel) countLabel.textContent = `${String(selectedIndex + 1).padStart(2, '0')} / ${String(cards.length).padStart(2, '0')}`;
+      section.dataset.activeTestimonial = String(selectedIndex + 1);
+    }
+    if (progressBar) progressBar.style.transform = `scaleX(${progress.toFixed(4)})`;
+  };
+
+  const scheduleUpdate = () => {
+    if (frame === null) frame = window.requestAnimationFrame(update);
+  };
+  window.addEventListener('scroll', scheduleUpdate, { passive: true });
+  window.addEventListener('resize', scheduleUpdate, { passive: true });
+  window.addEventListener('load', scheduleUpdate, { once: true });
+  scheduleUpdate();
+};
+
+initTestimonialScrollMotion();
 
 const journalGrids = [
   { element: document.querySelector('.journal-grid'), prefix: './journal/' },
