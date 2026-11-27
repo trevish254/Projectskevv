@@ -936,24 +936,82 @@ const homeServicesList = document.querySelector('#services .services-list');
 if (homeServicesList) {
   const renderHomeServiceMedia = (url, title) => {
     const media = document.createElement(url && /\.(mp4|webm|ogg|mov|m4v)(?:[?#].*)?$/i.test(url) ? 'video' : 'img');
-    if (!url) return media;
-    media.src = url;
-    media.alt = title;
-    if (media.tagName === 'VIDEO') { media.autoplay = true; media.muted = true; media.loop = true; media.playsInline = true; }
+    if (media.tagName === 'VIDEO') {
+      media.src = url;
+      media.setAttribute('aria-label', title);
+      media.autoplay = true;
+      media.muted = true;
+      media.loop = true;
+      media.playsInline = true;
+    } else {
+      media.src = url || '';
+      media.alt = title;
+    }
     return media;
   };
   const renderHomeServices = async () => {
     try {
-      const services = await window.projectskevvDb.from('service_posts').select('id,title,slug,image,status,published_at,created_at', 'status=eq.published&order=published_at.desc.nullslast,created_at.desc');
-      const servicesBySlug = new Map(services.map((service) => [service.slug, service]));
-      homeServicesList.querySelectorAll('.service-item[data-service-slug]').forEach((link) => {
-        const service = servicesBySlug.get(link.dataset.serviceSlug);
-        const imageContainer = link.querySelector('.service-image');
-        if (service?.image && imageContainer) {
-          const title = link.querySelector('.service-card-category')?.textContent.trim() || 'Projectskevv offer';
-          imageContainer.replaceChildren(renderHomeServiceMedia(service.image, title));
-        }
+      const services = await window.projectskevvDb.from('service_posts').select(
+        'id,title,slug,description,scope,image,application_title,detail1_title,detail2_title,detail3_title,feature_title,status,published_at,created_at',
+        'status=eq.published&order=published_at.desc.nullslast,created_at.desc'
+      );
+      if (!services.length) { revealDbContent(homeServicesList); return; }
+
+      const fragment = document.createDocumentFragment();
+      services.forEach((service, index) => {
+        const title = service.title || 'Untitled service';
+        const slug = service.slug || service.id;
+        const link = document.createElement('a');
+        link.className = 'service-item';
+        link.dataset.serviceSlug = slug;
+        link.href = `./services/branding/?slug=${encodeURIComponent(slug)}`;
+        link.setAttribute('aria-label', `Explore ${title}`);
+
+        const number = document.createElement('span');
+        number.className = 'service-card-index';
+        number.setAttribute('aria-hidden', 'true');
+        number.textContent = String(index + 1);
+        const category = document.createElement('span');
+        category.className = 'service-card-category';
+        category.textContent = title;
+
+        const content = document.createElement('div');
+        content.className = 'service-card-content';
+        const description = document.createElement('h3');
+        description.className = 'service-name';
+        description.textContent = service.description || `${title} for brands ready to stand apart.`;
+        const figure = document.createElement('figure');
+        figure.className = 'service-image';
+        figure.appendChild(renderHomeServiceMedia(service.image, title));
+        const divider = document.createElement('div');
+        divider.className = 'service-card-divider';
+        const capabilities = document.createElement('div');
+        capabilities.className = 'service-capabilities';
+        [
+          [service.scope, service.detail1_title],
+          [service.detail2_title, service.detail3_title],
+          [service.application_title, service.feature_title]
+        ].forEach((items) => {
+          const group = document.createElement('div');
+          group.className = 'service-capability-group';
+          items.filter(Boolean).forEach((item) => {
+            const label = document.createElement('span');
+            const text = String(item);
+            label.textContent = text === text.toLocaleUpperCase()
+              ? text.toLocaleLowerCase().replace(/\b[a-z]/g, (letter) => letter.toLocaleUpperCase())
+              : text;
+            group.appendChild(label);
+          });
+          if (group.childElementCount) capabilities.appendChild(group);
+        });
+
+        content.append(description, figure, divider, capabilities);
+        link.append(number, category, content);
+        fragment.appendChild(link);
       });
+      homeServicesList.replaceChildren(fragment);
+      const count = document.querySelector('#services .services-count');
+      if (count) count.textContent = `(${services.length})`;
       revealDbContent(homeServicesList);
     } catch (error) {
       revealDbContent(homeServicesList);
@@ -2041,7 +2099,7 @@ if (cmsPreview) {
   cmsProjectClose.addEventListener('click', closeCmsProjectEditor);
 
   const cmsServiceSection = document.querySelector('#services');
-  const cmsServiceItems = [...document.querySelectorAll('#services .service-item')];
+  const getCmsServiceItems = () => [...document.querySelectorAll('#services .service-item')];
   const cmsServiceEditor = document.createElement('aside');
   cmsServiceEditor.className = 'cms-service-editor';
   cmsServiceEditor.hidden = true;
@@ -2058,6 +2116,7 @@ if (cmsPreview) {
   const cmsServiceAvailable = cmsServiceEditor.querySelector('[data-cms-service-available]');
   const cmsServiceClose = cmsServiceEditor.querySelector('[data-cms-service-close]');
   const openCmsServiceEditor = () => {
+    const cmsServiceItems = getCmsServiceItems();
     if (!cmsServiceSection || !cmsServiceItems.length) return;
     cmsServiceEditor.hidden = false;
     closeCmsProjectEditor();
@@ -2077,6 +2136,7 @@ if (cmsPreview) {
   };
   const closeCmsServiceEditor = () => { cmsServiceEditor.hidden = true; };
   cmsServiceRange.addEventListener('input', () => {
+    const cmsServiceItems = getCmsServiceItems();
     const visibleCount = Math.min(Number(cmsServiceRange.value), cmsServiceItems.length);
     cmsServiceOutput.value = String(visibleCount);
     cmsServiceItems.forEach((item, index) => { item.style.display = index < visibleCount ? '' : 'none'; });
