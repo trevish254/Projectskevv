@@ -1270,7 +1270,7 @@ section.framer-1oykw2t {
 .services-page-title-row span { font-size: 14px; }
 .services-page-header > p { font-size: 16px; line-height: 1.35; margin: 4px 0 0; max-width: 250px; }
 .services-page-content { border-top: 1px solid rgba(0,0,0,.16); padding: 38px 0 150px; }
-.services-page-content .services-visual-container { height: 336px; margin-bottom: 90px; } .services-page-content .services-feature-gif { display: block; height: 100%; object-fit: cover; width: 100%; }
+.services-page-content .services-visual-container { height: 336px; margin-bottom: 90px; } .services-page-content .services-feature-gif, .services-section .services-feature-gif { display: block; height: 100%; object-fit: cover; object-position: center; width: 100%; }
 .services-page-content .services-list { gap: 20px; }
 .services-page-content .services-list { display: grid; gap: 72px 8px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .services-page-content .service-item { display: block; height: auto; }
