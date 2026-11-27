@@ -246,6 +246,75 @@ const initScrollMilestones = () => {
 
 initScrollMilestones();
 
+const initStickyWorkGrid = () => {
+  const section = document.querySelector('[data-sticky-work-grid]');
+  const pin = section?.querySelector('.sticky-work-grid__pin');
+  const grid = section?.querySelector('.sticky-work-grid__gallery');
+  const items = Array.from(section?.querySelectorAll('.sticky-work-grid__item') || []);
+  const title = section?.querySelector('#sticky-work-grid-title');
+  const description = section?.querySelector('.sticky-work-grid__description');
+  const link = section?.querySelector('.sticky-work-grid__link');
+  if (!section || !pin || !grid || !items.length || !title) return;
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+  let frame = null;
+  let active = false;
+  const clamp = (value) => Math.max(0, Math.min(1, value));
+  const ease = (value) => value * value * (3 - 2 * value);
+  const update = () => {
+    frame = null;
+    if (!active) return;
+    const bounds = section.getBoundingClientRect();
+    const viewportHeight = window.innerHeight;
+    const scrollLength = section.offsetHeight + viewportHeight - pin.offsetHeight;
+    const progress = clamp((viewportHeight - bounds.top) / Math.max(1, scrollLength));
+    const zoomProgress = ease(clamp((progress - .35) / .65));
+    const scale = 1 + zoomProgress * 1.05;
+    const columns = 3;
+    const rows = Math.ceil(items.length / columns);
+
+    grid.style.transform = `scale(${scale})`;
+    items.forEach((item, index) => {
+      const column = index % columns;
+      const row = Math.floor(index / columns);
+      const stagger = (index / Math.max(1, items.length - 1)) * .14;
+      const reveal = ease(clamp((progress - stagger) / .38));
+      const enteringFromTop = column % 2 === 0;
+      const entryY = (1 - reveal) * (enteringFromTop ? -1 : 1) * viewportHeight * .95;
+      const sideShift = column === 0 ? -40 * zoomProgress : column === 2 ? 40 * zoomProgress : 0;
+      const centerShift = column === 1 ? (row < rows / 2 ? -40 : 40) * zoomProgress : 0;
+      item.style.transform = `translate3d(${sideShift}%, ${entryY.toFixed(1)}px, 0) translateY(${centerShift}%)`;
+    });
+
+    const contentProgress = ease(clamp((progress - .38) / .24));
+    title.style.opacity = String(.35 + .65 * ease(clamp(progress / .2)));
+    title.style.transform = `translate3d(0, ${(1 - ease(clamp(progress / .38))) * 8}vh, 0)`;
+    if (description) {
+      description.style.opacity = String(contentProgress);
+      description.style.transform = `translate3d(0, ${(1 - contentProgress) * 14}px, 0)`;
+    }
+    if (link) {
+      link.style.opacity = String(contentProgress);
+      link.style.visibility = contentProgress > .92 ? 'visible' : 'hidden';
+      link.style.transform = `translate3d(0, ${(1 - contentProgress) * 14}px, 0)`;
+    }
+  };
+  const scheduleUpdate = () => {
+    if (active && frame === null) frame = window.requestAnimationFrame(update);
+  };
+  const observer = new IntersectionObserver((entries) => {
+    active = entries.some((entry) => entry.isIntersecting);
+    section.dataset.scrollActive = String(active);
+    if (active) scheduleUpdate();
+  }, { rootMargin: '120px 0px' });
+
+  observer.observe(section);
+  window.addEventListener('scroll', scheduleUpdate, { passive: true });
+  window.addEventListener('resize', scheduleUpdate, { passive: true });
+};
+
+initStickyWorkGrid();
+
 if (window.location.protocol === 'file:') {
   const filePath = decodeURIComponent(window.location.pathname).replace(/\\/g, '/');
   const marker = '/Projectskevv/';
